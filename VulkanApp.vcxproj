@@ -153,6 +153,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\VulkanApp.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\VulkanApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
