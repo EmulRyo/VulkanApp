@@ -1,3 +1,5 @@
+#pragma once
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -6,6 +8,8 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+
+#include "Window.h"
 
 struct Vertex {
     glm::vec3 pos;
@@ -33,6 +37,8 @@ struct SwapChainSupportDetails {
 
 class VulkanApp {
 public:
+    VulkanApp();
+
     void run();
 
 private:
@@ -54,11 +60,12 @@ private:
 #endif
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    GLFWwindow* m_window = nullptr;
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDevice device;
+    Window m_window;
+
+    VkInstance m_instance;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_device;
     VkQueue graphicsQueue;
     VkSurfaceKHR surface;
     VkQueue presentQueue;
@@ -77,7 +84,7 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-    bool framebufferResized = false;
+    bool m_framebufferResized = false;
     uint32_t currentFrame = 0;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
@@ -105,11 +112,11 @@ private:
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
     static std::vector<char> readFile(const std::string& filename);
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+    void FramebufferResizeCallback(int width, int height);
 
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-    void initWindow();
+    void initVulkan();
 
     std::vector<const char*> getRequiredExtensions();
     void checkExtensions();
@@ -117,8 +124,6 @@ private:
     bool checkValidationLayerSupport();
 
     void createInstance();
-
-    void initVulkan();
 
     void createSwapChain();
     void recreateSwapChain();
