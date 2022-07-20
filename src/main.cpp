@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 #include "VulkanApp.h"
 
 int main() {
@@ -7,7 +8,7 @@ int main() {
         app.run();
     }
     catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        spdlog::critical("{}", e.what());
         return EXIT_FAILURE;
     }
 

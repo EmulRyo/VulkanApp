@@ -31,6 +31,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+#include <spdlog/spdlog.h>
+
 #include "VulkanApp.h"
 
 struct UniformBufferObject {
@@ -110,7 +112,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
 
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    spdlog::error("Validation layer: {}", pCallbackData->pMessage);
 
     return VK_FALSE;
 }
@@ -118,6 +120,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 VulkanApp::VulkanApp()
     :m_window(WIDTH, HEIGHT, "Vulkan")
 {
+    spdlog::set_level(spdlog::level::level_enum::trace);
+
     m_window.EventSubscribe_OnFramebufferResize(std::bind(&VulkanApp::FramebufferResizeCallback, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -175,17 +179,23 @@ void VulkanApp::checkExtensions() {
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    std::cout << "available extensions:\n";
 
+    spdlog::debug("Available extensions:");
+    spdlog::set_pattern("%v");
     for (const auto& extension : extensions) {
-        std::cout << '\t' << extension.extensionName << "[v" << extension.specVersion << ']' << '\n';
+        spdlog::debug("\t{} [v{}]", extension.extensionName, extension.specVersion);
     }
+    spdlog::debug("");
+    spdlog::set_pattern("%+");
 
     std::vector<const char*> requiredExtensions = getRequiredExtensions();
-    std::cout << "required extensions:\n";
+    spdlog::debug("Required extensions:");
+    spdlog::set_pattern("%v");
     for (int i = 0; i < requiredExtensions.size(); i++) {
-        std::cout << '\t' << requiredExtensions[i] << '\n';
+        spdlog::debug("\t{}", requiredExtensions[i]);
     }
+    spdlog::debug("");
+    spdlog::set_pattern("%+");
 }
 
 bool VulkanApp::checkValidationLayerSupport() {
@@ -433,12 +443,15 @@ void VulkanApp::pickPhysicalDevice() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-    std::cout << "Available devices:\n";
+    spdlog::info("Available devices:");
+    spdlog::set_pattern("%v");
 
     for (int i = 0; i < devices.size(); i++) {
         const auto& device = devices[i];
         printDevice(i, device);
     }
+
+    spdlog::info("");
 
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
@@ -454,7 +467,9 @@ void VulkanApp::pickPhysicalDevice() {
     else {
         auto it = std::find(devices.begin(), devices.end(), m_physicalDevice);
         int64_t index = it - devices.begin();
-        std::cout << "GPU picked: " << index << "\n";
+        spdlog::set_pattern("%^%v%$");
+        spdlog::info("GPU picked: {}\n", index);
+        spdlog::set_pattern("%+");
     }
 }
 
@@ -495,18 +510,16 @@ void VulkanApp::printDevice(int id, VkPhysicalDevice device) {
 
     std::vector<std::string> type = { "Other", "Integrated GPU", "Discrete GPU", "Virtual GPU", "CPU" };
     std::map<int, std::string> vendors = { {0x1002, "AMD"}, {0x1010, "ImgTec"}, {0x10DE, "NVIDIA"}, {0x13B5, "ARM"},  {0x5143, "Qualcomm"}, {0x8086, "INTEL"}, };
-
-    std::cout << id << " - " << deviceProperties.deviceName << ":\n";
-    std::cout << "\ttype: " << type[deviceProperties.deviceType] << "\n";
-    std::cout << "\tID: 0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << deviceProperties.deviceID << std::dec << "\n";
-    std::cout << "\tdriver version: " << VK_API_VERSION_MAJOR(deviceProperties.driverVersion) << "." << VK_API_VERSION_MINOR(deviceProperties.driverVersion) << "." << VK_API_VERSION_PATCH(deviceProperties.driverVersion) << "\n";
-    std::cout << "\tvendor: ";
+    std::string vendorName = "Unknown";
     if (vendors.find(deviceProperties.vendorID) != vendors.end())
-        std::cout << vendors[deviceProperties.vendorID];
-    else
-        std::cout << "Unknown";
-    std::cout << " (0x" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << deviceProperties.vendorID << std::dec << ")\n";
-    std::cout << "\tapi version: " << VK_API_VERSION_MAJOR(deviceProperties.apiVersion) << "." << VK_API_VERSION_MINOR(deviceProperties.apiVersion) << "." << VK_API_VERSION_PATCH(deviceProperties.apiVersion) << "\n";
+        vendorName = vendors[deviceProperties.vendorID];
+
+    spdlog::info("{} - {}:", id, deviceProperties.deviceName);
+    spdlog::info("\ttype: ", type[deviceProperties.deviceType]);
+    spdlog::info("\tID: {:#06x}", deviceProperties.deviceID);
+    spdlog::info("\tdriver version: {}.{}.{}", VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+    spdlog::info("\tvendor: {} ({:#06x})", vendorName, deviceProperties.vendorID);
+    spdlog::info("\tapi version: {}.{}.{}", VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion));
 }
 
 bool VulkanApp::isDeviceSuitable(VkPhysicalDevice device) {
@@ -1328,7 +1341,7 @@ void VulkanApp::loadModel() {
     }
 
     if (!warn.empty())
-        std::cout << "tinyobj warning:\n" << warn;
+        spdlog::warn("tinyobj:\n{}", warn);
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
 
@@ -1360,7 +1373,7 @@ void VulkanApp::loadModel() {
         }
     }
 
-    std::cout << "Vertices: " << vertices.size() << ", indices: " << indices.size() << "\n";
+    spdlog::debug("Vertices: {}, indices: {}\n", vertices.size(), indices.size());
 }
 
 void VulkanApp::createVertexBuffer() {
