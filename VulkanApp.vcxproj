@@ -153,10 +153,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\ValidationLayers.cpp" />
     <ClCompile Include="src\VulkanApp.cpp" />
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ValidationLayers.h" />
     <ClInclude Include="src\VulkanApp.h" />
     <ClInclude Include="src\Window.h" />
   </ItemGroup>

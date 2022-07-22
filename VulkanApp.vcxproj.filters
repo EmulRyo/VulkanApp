@@ -35,12 +35,18 @@
     <ClCompile Include="src\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ValidationLayers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\VulkanApp.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Window.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ValidationLayers.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

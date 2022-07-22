@@ -1,15 +1,19 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <iostream>
 #include <optional>
 #include <vector>
 
+#pragma warning( push )
+#pragma warning( disable: 26812 )
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#pragma warning( pop )
+
 #include <glm/glm.hpp>
 
 #include "Window.h"
+#include "ValidationLayers.h"
 
 struct Vertex {
     glm::vec3 pos;
@@ -46,24 +50,16 @@ private:
     const uint32_t HEIGHT = 600;
     const std::string MODEL_PATH = "models/viking_room.obj";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
-    const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-#ifdef NDEBUG
-    const bool enableValidationLayers = false;
-#else
-    const bool enableValidationLayers = true;
-#endif
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     Window m_window;
+    ValidationLayers m_validationLayers;
 
     VkInstance m_instance;
-    VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue graphicsQueue;
@@ -114,14 +110,10 @@ private:
     static std::vector<char> readFile(const std::string& filename);
     void FramebufferResizeCallback(int width, int height);
 
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
     void initVulkan();
 
-    std::vector<const char*> getRequiredExtensions();
     void checkExtensions();
     bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    bool checkValidationLayerSupport();
 
     void createInstance();
 
@@ -135,8 +127,6 @@ private:
     void pickPhysicalDevice();
     void printDevice(int id, VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
-
-    void setupDebugMessenger();
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 

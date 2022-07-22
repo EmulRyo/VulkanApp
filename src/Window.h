@@ -1,7 +1,10 @@
 #pragma once
 
+#pragma warning( push )
+#pragma warning( disable: 26812 )
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#pragma warning( pop )
 
 #include <eventpp/callbacklist.h>
 
@@ -13,6 +16,7 @@ public:
 
 	VkResult CreateVulkanSurface(VkInstance instance, VkSurfaceKHR* surface);
 	void GetFrameBufferSize(int& width, int& height);
+	std::vector<const char*> GetRequiredExtensions(bool enableValidationLayers);
 	bool ShouldClose();
 	void PollEvents();
 	void WaitEvents();

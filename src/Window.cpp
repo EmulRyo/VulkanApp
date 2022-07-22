@@ -31,6 +31,20 @@ void Window::GetFrameBufferSize(int& width, int& height) {
     glfwGetFramebufferSize(m_window, &width, &height);
 }
 
+std::vector<const char*> Window::GetRequiredExtensions(bool enableValidationLayers) {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    //first, last
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (enableValidationLayers) {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
 bool Window::ShouldClose() {
     return glfwWindowShouldClose(m_window) != 0;
 }
