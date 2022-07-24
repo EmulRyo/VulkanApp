@@ -14,7 +14,8 @@ public:
 	Window(int width, int height, const char* title);
 	~Window();
 
-	VkResult CreateVulkanSurface(VkInstance instance, VkSurfaceKHR* surface);
+	void SetVulkanInstance(VkInstance instance) { m_instance = instance; };
+	VkSurfaceKHR GetVulkanSurface();
 	void GetFrameBufferSize(int& width, int& height);
 	std::vector<const char*> GetRequiredExtensions(bool enableValidationLayers);
 	bool ShouldClose();
@@ -26,6 +27,8 @@ public:
 
 private:
 	GLFWwindow* m_window = nullptr;
+	VkInstance m_instance = VK_NULL_HANDLE;
+	VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 	int m_width, m_height;
 
 	eventpp::CallbackList<void(int width, int height)> m_OnFramebufferResizeCallbackList;

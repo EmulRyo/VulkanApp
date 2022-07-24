@@ -22,10 +22,12 @@ Window::~Window() {
     glfwTerminate();
 }
 
-VkResult Window::CreateVulkanSurface(VkInstance instance, VkSurfaceKHR *surface) {
-    return glfwCreateWindowSurface(instance, m_window, nullptr, surface);
+VkSurfaceKHR Window::GetVulkanSurface() {
+    if (!m_surface)
+        glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
+        
+    return m_surface;
 }
-
 
 void Window::GetFrameBufferSize(int& width, int& height) {
     glfwGetFramebufferSize(m_window, &width, &height);
