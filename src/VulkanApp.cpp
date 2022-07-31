@@ -29,10 +29,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-
 #include "Device.h"
+#include "Mesh.h"
+#include "Model.h"
 #include "VulkanApp.h"
 
 struct UniformBufferObject {
@@ -189,17 +188,18 @@ void VulkanApp::initVulkan() {
     createRenderPass();
     createDescriptorSetLayout();
     createGraphicsPipeline();
-    createCommandPool();
+    m_device->CreateCommandPool();
     createColorResources();
     createDepthResources();
     createFramebuffers();
+
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    loadModel();
-    createVertexBuffer();
-    createIndexBuffer();
+    
+    m_model = new Model(m_device, MODEL_PATH);
     createUniformBuffers();
+
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
@@ -521,25 +521,12 @@ void VulkanApp::createFramebuffers() {
     }
 }
 
-void VulkanApp::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices = m_device->FindQueueFamilies();
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-    if (vkCreateCommandPool(m_device->GetHandle(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
-}
-
 void VulkanApp::createCommandBuffers() {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = m_device->GetCommandPool();
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
@@ -786,7 +773,7 @@ VkCommandBuffer VulkanApp::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = m_device->GetCommandPool();
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
@@ -812,7 +799,7 @@ void VulkanApp::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     vkQueueSubmit(m_device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(m_device->GetGraphicsQueue());
 
-    vkFreeCommandBuffers(m_device->GetHandle(), commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(m_device->GetHandle(), m_device->GetCommandPool(), 1, &commandBuffer);
 }
 
 void VulkanApp::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
@@ -915,7 +902,7 @@ void VulkanApp::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width
 
     endSingleTimeCommands(commandBuffer);
 }
-
+/*
 void VulkanApp::loadModel() {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -961,46 +948,7 @@ void VulkanApp::loadModel() {
 
     spdlog::debug("Vertices: {}, indices: {}\n", vertices.size(), indices.size());
 }
-
-void VulkanApp::createVertexBuffer() {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(m_device->GetHandle(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(m_device->GetHandle(), stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(m_device->GetHandle(), stagingBuffer, nullptr);
-    vkFreeMemory(m_device->GetHandle(), stagingBufferMemory, nullptr);
-}
-
-void VulkanApp::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-    void* data;
-    vkMapMemory(m_device->GetHandle(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    vkUnmapMemory(m_device->GetHandle(), stagingBufferMemory);
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(m_device->GetHandle(), stagingBuffer, nullptr);
-    vkFreeMemory(m_device->GetHandle(), stagingBufferMemory, nullptr);
-}
+*/
 
 void VulkanApp::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1079,41 +1027,6 @@ void VulkanApp::createDescriptorSets() {
     }
 }
 
-void VulkanApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = commandPool;
-    allocInfo.commandBufferCount = 1;
-
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(m_device->GetHandle(), &allocInfo, &commandBuffer);
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0; // Optional
-    copyRegion.dstOffset = 0; // Optional
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-
-    vkQueueSubmit(m_device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(m_device->GetGraphicsQueue());
-
-    vkFreeCommandBuffers(m_device->GetHandle(), commandPool, 1, &commandBuffer);
-}
-
 uint32_t VulkanApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     m_device->GetMemoryProperties(&memProperties);
@@ -1154,13 +1067,7 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    VkBuffer vertexBuffers[] = { vertexBuffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+    m_model->Draw(commandBuffer, pipelineLayout, &descriptorSets[currentFrame]);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1347,10 +1254,7 @@ void VulkanApp::cleanup() {
 
     vkDestroyDescriptorSetLayout(m_device->GetHandle(), descriptorSetLayout, nullptr);
 
-    vkDestroyBuffer(m_device->GetHandle(), indexBuffer, nullptr);
-    vkFreeMemory(m_device->GetHandle(), indexBufferMemory, nullptr);
-    vkDestroyBuffer(m_device->GetHandle(), vertexBuffer, nullptr);
-    vkFreeMemory(m_device->GetHandle(), vertexBufferMemory, nullptr);
+    delete m_model;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(m_device->GetHandle(), renderFinishedSemaphores[i], nullptr);
@@ -1358,7 +1262,7 @@ void VulkanApp::cleanup() {
         vkDestroyFence(m_device->GetHandle(), inFlightFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(m_device->GetHandle(), commandPool, nullptr);
+    vkDestroyCommandPool(m_device->GetHandle(), m_device->GetCommandPool(), nullptr);
         
     delete m_device;
     m_validationLayers.DestroyDebugMessenger();

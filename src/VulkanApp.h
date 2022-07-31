@@ -12,24 +12,7 @@
 #include "ValidationLayers.h"
 
 class Device;
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription();
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
-
-    bool operator==(const Vertex& other) const;
-};
-/*
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete();
-}*/
+class Model;
 
 class VulkanApp {
 public:
@@ -42,6 +25,7 @@ private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
     const std::string MODEL_PATH = "models/viking_room.obj";
+    const std::string MTL_PATH = "models/";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -56,7 +40,7 @@ private:
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
     std::vector<VkFramebuffer> swapChainFramebuffers;
-    VkCommandPool commandPool;
+
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
@@ -64,12 +48,7 @@ private:
     bool m_framebufferResized = false;
     uint32_t currentFrame = 0;
 
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    Model *m_model;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -111,13 +90,11 @@ private:
 
     void createFramebuffers();
 
-    void createCommandPool();
     void createCommandBuffers();
 
     void createSyncObjects();
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     void createTextureImage();
@@ -131,10 +108,6 @@ private:
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-    void loadModel();
-    void createVertexBuffer();
-    void createIndexBuffer();
 
     void createUniformBuffers();
 

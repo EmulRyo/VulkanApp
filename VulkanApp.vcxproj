@@ -117,14 +117,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.216.0\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\tinyobjloader;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.216.0\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.216.0\Lib;External\glfw-3.3.7.bin.WIN64\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.216.0\Lib;External\glfw-3.3.7.bin.WIN64\lib-vc2017;..\assimp-5.2.4\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,7 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.216.0\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\tinyobjloader;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.216.0\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -143,8 +143,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.216.0\Lib;External\glfw-3.3.7.bin.WIN64\lib-vc2017;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.216.0\Lib;External\glfw-3.3.7.bin.WIN64\lib-vc2017;..\assimp-5.2.4\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -154,12 +154,16 @@
   <ItemGroup>
     <ClCompile Include="src\Device.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\ValidationLayers.cpp" />
     <ClCompile Include="src\VulkanApp.cpp" />
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Device.h" />
+    <ClInclude Include="src\Mesh.h" />
+    <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\ValidationLayers.h" />
     <ClInclude Include="src\VulkanApp.h" />
     <ClInclude Include="src\Window.h" />

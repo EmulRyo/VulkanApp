@@ -35,12 +35,14 @@ public:
 	VkSampleCountFlagBits GetMSAASamples() { return m_msaaSamples; };
 	VkSwapchainKHR GetSwapChain() { return m_swapChain; };
 	std::vector<VkImageView>& GetSwapChainImageViews() { return m_swapChainImageViews; }
+	VkCommandPool GetCommandPool() { return m_commandPool; }
 	void GetProperties(VkPhysicalDeviceProperties* props);
 	void GetFormatProperties(VkFormat format, VkFormatProperties* props);
 	void GetMemoryProperties(VkPhysicalDeviceMemoryProperties* props);
 	QueueFamilyIndices FindQueueFamilies();
 	void CreateSwapChain();
 	void CreateImageViews();
+	void CreateCommandPool();
 	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
 	static void Print(int id, VkPhysicalDevice device);
@@ -55,6 +57,7 @@ private:
 	VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	VkQueue m_graphicsQueue = VK_NULL_HANDLE;
 	VkQueue m_presentQueue = VK_NULL_HANDLE;
+	VkCommandPool m_commandPool = VK_NULL_HANDLE;
 
 	VkSwapchainKHR m_swapChain;
 	std::vector<VkImage> m_swapChainImages;

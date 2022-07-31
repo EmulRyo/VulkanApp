@@ -357,6 +357,19 @@ VkExtent2D Device::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities
     }
 }
 
+void Device::CreateCommandPool() {
+    QueueFamilyIndices queueFamilyIndices = FindQueueFamilies();
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+    if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+}
+
 void Device::GetProperties(VkPhysicalDeviceProperties *props) {
     vkGetPhysicalDeviceProperties(m_physicalDevice, props);
 }
