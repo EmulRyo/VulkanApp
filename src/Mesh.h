@@ -15,8 +15,6 @@ struct Vertex {
 
     static VkVertexInputBindingDescription getBindingDescription();
     static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
-
-    bool operator==(const Vertex& other) const;
 };
 
 struct Texture {
@@ -30,6 +28,8 @@ public:
     Mesh(Device *device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<Texture> textures);
     Mesh(const Mesh& other);
     ~Mesh();
+    size_t GetNumVertices() { return m_vertices.size(); };
+    size_t GetNumIndices() { return m_indices.size(); };
     void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
 
 private:

@@ -32,7 +32,7 @@ void Model::Load(const std::string& path) {
     Assimp::DefaultLogger::get()->attachStream(new AssimpStream, severity);
 
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_ValidateDataStructure | aiProcess_GlobalScale);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_ValidateDataStructure | aiProcess_GlobalScale);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -42,6 +42,7 @@ void Model::Load(const std::string& path) {
     m_directory = path.substr(0, path.find_last_of('/'));
 
     ProcessNode(scene->mRootNode, scene);
+    spdlog::info("Model \"{}\":\n{} meshes, {} vertices, {} indices ({} triangles)", path, m_meshes.size(), m_numVertices, m_numIndices, m_numIndices / 3);
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene)
@@ -49,8 +50,12 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
     // process all the node's meshes (if any)
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        m_meshes.push_back(ProcessMesh(mesh, scene));
+        aiMesh* assimpMesh = scene->mMeshes[node->mMeshes[i]];
+        Mesh* mesh = ProcessMesh(assimpMesh, scene);
+        m_numVertices += mesh->GetNumVertices();
+        m_numIndices += mesh->GetNumIndices();
+        spdlog::debug("Mesh {}: vertices: {}, indices: {}({} triangles)", m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3);
+        m_meshes.push_back(mesh);
     }
     // then do the same for each of its children
     for (unsigned int i = 0; i < node->mNumChildren; i++)

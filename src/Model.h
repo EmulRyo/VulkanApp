@@ -23,6 +23,8 @@ private:
     // model data
     std::vector<Mesh *> m_meshes;
     std::string m_directory;
+    size_t m_numVertices = 0;
+    size_t m_numIndices = 0;
 
     void Load(const std::string &path);
     void ProcessNode(aiNode* node, const aiScene* scene);
