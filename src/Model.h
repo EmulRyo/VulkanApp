@@ -3,14 +3,14 @@
 #include <vector>
 #include <string>
 
-#include "Mesh.h"
-
 struct aiNode;
 struct aiScene;
 struct aiMesh;
 struct aiMaterial;
 enum aiTextureType;
 class Device;
+class Mesh;
+struct Material;
 
 class Model
 {
@@ -22,11 +22,13 @@ private:
     Device* m_device;
     // model data
     std::vector<Mesh *> m_meshes;
+    std::vector<Material *> m_materials;
     std::string m_directory;
     size_t m_numVertices = 0;
     size_t m_numIndices = 0;
 
     void Load(const std::string &path);
+    void ProcessMaterials(const aiScene* scene);
     void ProcessNode(aiNode* node, const aiScene* scene);
     Mesh *ProcessMesh(aiMesh* mesh, const aiScene* scene);
     std::vector<Texture> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);

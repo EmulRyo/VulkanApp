@@ -5,16 +5,18 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
+#include "assimp/types.h"
+
 class Device;
 
 struct Vertex {
     glm::vec3 pos;
-    //glm::vec3 normal;
+    glm::vec3 normal;
     glm::vec3 color;
     glm::vec2 texCoord;
 
     static VkVertexInputBindingDescription getBindingDescription();
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
+    static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
 };
 
 struct Texture {
@@ -22,14 +24,25 @@ struct Texture {
     std::string type;
 };
 
+struct Material {
+    std::string name;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    glm::vec3 ambient;
+    glm::vec3 emissive;
+
+    static glm::vec3 ToGlm(const aiColor3D &color3D) { return glm::vec3(color3D.r, color3D.g, color3D.b); };
+};
+
 class Mesh
 {
 public:
-    Mesh(Device *device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<Texture> textures);
+    Mesh(Device *device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, Material *material);
     Mesh(const Mesh& other);
     ~Mesh();
     size_t GetNumVertices() { return m_vertices.size(); };
     size_t GetNumIndices() { return m_indices.size(); };
+    Material* GetMaterial() { return m_material; }
     void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
 
 private:
@@ -37,7 +50,7 @@ private:
     // mesh data
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_indices;
-    std::vector<Texture>  m_textures;
+    Material *m_material;
 
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
