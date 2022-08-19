@@ -13,6 +13,7 @@
 
 class Device;
 class Model;
+class Texture;
 
 class VulkanApp {
 public:
@@ -24,9 +25,9 @@ public:
 private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
-    const std::string MODEL_PATH = "models/shiba/1.fbx";
+    //const std::string MODEL_PATH = "models/shiba/1.fbx";
     //const std::string MODEL_PATH = "models/swamp-location/map_1.obj";
-    //const std::string MODEL_PATH = "models/che/scene.gltf";
+    const std::string MODEL_PATH = "models/che/scene.gltf";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -51,18 +52,12 @@ private:
 
     Model *m_model;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    uint32_t mipLevels;
-
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
+    std::vector<VkBuffer> m_uniformBuffers;
+    std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+    VkDescriptorPool m_descriptorPool;
+    std::vector<VkDescriptorSet> m_descriptorSets;
+    
+    Texture* m_texture;
 
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
@@ -87,28 +82,11 @@ private:
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
 
-    VkShaderModule createShaderModule(const std::vector<char>& code);
-
     void createFramebuffers();
 
     void createCommandBuffers();
 
     void createSyncObjects();
-
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-    void createTextureImage();
-    void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
-    void createTextureImageView();
-    void createTextureSampler();
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format,
-        VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
     void createUniformBuffers();
 
@@ -124,7 +102,6 @@ private:
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat findDepthFormat();
-    bool hasStencilComponent(VkFormat format);
 
     void mainLoop();
     void drawFrame();

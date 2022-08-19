@@ -25,26 +25,178 @@ public:
 	Device(VkInstance instance, Window &window, ValidationLayers& validationLayers);
 	~Device();
 
-	VkDevice GetHandle() { return m_device; };
-	VkResult WaitIdle();
 	VkQueue GetGraphicsQueue() { return m_graphicsQueue; }
 	VkQueue GetPresentQueue() { return m_presentQueue; }
 
-	VkFormat GetSwapChainImageFormat() { return m_swapChainImageFormat; }
-	VkExtent2D GetSwapChainExtent() { return m_swapChainExtent; }
 	VkSampleCountFlagBits GetMSAASamples() { return m_msaaSamples; };
-	VkSwapchainKHR GetSwapChain() { return m_swapChain; };
-	std::vector<VkImageView>& GetSwapChainImageViews() { return m_swapChainImageViews; }
 	VkCommandPool GetCommandPool() { return m_commandPool; }
 	void GetProperties(VkPhysicalDeviceProperties* props);
 	void GetFormatProperties(VkFormat format, VkFormatProperties* props);
 	void GetMemoryProperties(VkPhysicalDeviceMemoryProperties* props);
 	QueueFamilyIndices FindQueueFamilies();
-	void CreateSwapChain();
-	void CreateImageViews();
-	void CreateCommandPool();
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
+	void CreateSwapChain();
+	VkSwapchainKHR GetSwapChain() { return m_swapChain; };
+	std::vector<VkImageView>& GetSwapChainImageViews() { return m_swapChainImageViews; }
+	VkFormat GetSwapChainImageFormat() { return m_swapChainImageFormat; }
+	VkExtent2D GetSwapChainExtent() { return m_swapChainExtent; }
+	void DestroySwapchain(VkSwapchainKHR swapchain) { vkDestroySwapchainKHR(m_device, swapchain, nullptr); }
+
+	void CreateImageViews();
+
+	VkCommandPool CreateCommandPool();
+	void DestroyCommandPool(VkCommandPool commandPool);
+	
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+	void DestroyImageView(VkImageView imageView);
+
+	VkResult CreateRenderPass(
+		const VkRenderPassCreateInfo* pCreateInfo,
+		VkRenderPass* pRenderPass);
+
+	void DestroyRenderPass(VkRenderPass renderPass) { vkDestroyRenderPass(m_device, renderPass, nullptr); }
+
+	VkResult CreatePipelineLayout(
+		const VkPipelineLayoutCreateInfo* pCreateInfo,
+		VkPipelineLayout* pPipelineLayout);
+
+	VkResult CreateGraphicsPipeline(
+		const VkGraphicsPipelineCreateInfo* pCreateInfo,
+		VkPipeline* pPipeline);
+
+	void DestroyPipeline(VkPipeline pipeline) { vkDestroyPipeline(m_device, pipeline, nullptr); }
+
+	void DestroyPipelineLayout(VkPipelineLayout pipelineLayout) { vkDestroyPipelineLayout(m_device, pipelineLayout, nullptr); }
+
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+	void DestroyShaderModule(VkShaderModule shaderModule) { vkDestroyShaderModule(m_device, shaderModule, nullptr); }
+
+	VkResult CreateFramebuffer(
+		const VkFramebufferCreateInfo* pCreateInfo,
+		VkFramebuffer* pFramebuffer);
+
+	void DestroyFramebuffer(VkFramebuffer framebuffer) { vkDestroyFramebuffer(m_device, framebuffer, nullptr); }
+
+	VkResult AllocateCommandBuffers(
+		const VkCommandBufferAllocateInfo* pAllocateInfo,
+		VkCommandBuffer* pCommandBuffers);
+
+	VkResult CreateSemaphore(
+		const VkSemaphoreCreateInfo* pCreateInfo,
+		VkSemaphore* pSemaphore);
+
+	void DestroySemaphore(VkSemaphore semaphore) { vkDestroySemaphore(m_device, semaphore, nullptr); }
+
+	VkResult CreateFence(
+		const VkFenceCreateInfo* pCreateInfo,
+		VkFence* pFence);
+
+	void DestroyFence(VkFence fence) { vkDestroyFence(m_device, fence, nullptr); }
+
+	VkResult ResetFences(uint32_t fenceCount, const VkFence* pFences) { return vkResetFences(m_device, fenceCount, pFences); }
+
+	VkResult WaitForFences(
+		uint32_t fenceCount,
+		const VkFence* pFences,
+		VkBool32 waitAll,
+		uint64_t timeout);
+
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	void CreateBuffer(
+		VkDeviceSize size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		VkBuffer& buffer,
+		VkDeviceMemory& bufferMemory);
+
+	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+	void DestroyBuffer(VkBuffer buffer) { vkDestroyBuffer(m_device, buffer, nullptr); }
+
+	void CreateImage(
+		uint32_t width,
+		uint32_t height,
+		uint32_t mipLevels,
+		VkSampleCountFlagBits numSamples,
+		VkFormat format,
+		VkImageTiling tiling,
+		VkImageUsageFlags usage,
+		VkMemoryPropertyFlags properties,
+		VkImage& image,
+		VkDeviceMemory& imageMemory);
+
+	void DestroyImage(VkImage image);
+
+	VkResult AllocateMemory(
+		const VkMemoryAllocateInfo* pAllocateInfo,
+		VkDeviceMemory* pMemory);
+
+	void FreeMemory(VkDeviceMemory memory) { vkFreeMemory(m_device, memory, nullptr); }
+
+	VkResult MapMemory(
+		VkDeviceMemory memory,
+		VkDeviceSize offset,
+		VkDeviceSize size,
+		VkMemoryMapFlags flags,
+		void** ppData);
+
+	void UnmapMemory(VkDeviceMemory memory) { vkUnmapMemory(m_device, memory); }
+
+	VkResult CreateSampler(
+		const VkSamplerCreateInfo* pCreateInfo,
+		VkSampler* pSampler);
+
+	void DestroySampler(VkSampler sampler) { vkDestroySampler(m_device, sampler, nullptr); }
+
+	VkCommandBuffer BeginSingleTimeCommands();
+	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+	VkResult AcquireNextImage(
+		uint64_t timeout,
+		VkSemaphore semaphore,
+		VkFence fence,
+		uint32_t* pImageIndex);
+
+	void DrawCommandBufferSubmit(
+		const VkSemaphore& waitSemaphore,
+		const VkPipelineStageFlags& waitDstStageMask,
+		const VkCommandBuffer& commandBuffer,
+		const VkSemaphore& signalSemaphore,
+		VkFence fence);
+
+	VkResult CreateDescriptorPool(
+		const VkDescriptorPoolCreateInfo* pCreateInfo,
+		VkDescriptorPool* pDescriptorPool);
+
+	void DestroyDescriptorPool(VkDescriptorPool descriptorPool) { vkDestroyDescriptorPool(m_device, descriptorPool, nullptr); }
+
+	VkResult CreateDescriptorSetLayout(
+		const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
+		VkDescriptorSetLayout* pSetLayout);
+
+	void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout) { vkDestroyDescriptorSetLayout(m_device, descriptorSetLayout, nullptr); }
+
+	VkResult AllocateDescriptorSets(
+		const VkDescriptorSetAllocateInfo* pAllocateInfo,
+		VkDescriptorSet* pDescriptorSets);
+
+	VkResult FreeDescriptorSets(
+		VkDescriptorPool descriptorPool,
+		uint32_t descriptorSetCount,
+		const VkDescriptorSet* pDescriptorSets);
+
+	void UpdateDescriptorSets(
+		uint32_t descriptorWriteCount,
+		const VkWriteDescriptorSet* pDescriptorWrites);
+
+	VkResult WaitIdle() { return vkDeviceWaitIdle(m_device); }
+
+	static bool HasStencilComponent(VkFormat format);
 	static void Print(int id, VkPhysicalDevice device);
 
 private:
@@ -60,23 +212,23 @@ private:
 	VkCommandPool m_commandPool = VK_NULL_HANDLE;
 
 	VkSwapchainKHR m_swapChain;
-	std::vector<VkImage> m_swapChainImages;
 	VkFormat m_swapChainImageFormat;
 	VkExtent2D m_swapChainExtent;
+	std::vector<VkImage> m_swapChainImages;
 	std::vector<VkImageView> m_swapChainImageViews;
 
-	void PickPhysicalDevice(VkSurfaceKHR surface);
+	void PrintAllPhysicalDevices();
+	VkPhysicalDevice SelectPhysicalDevice(VkSurfaceKHR surface);
 	bool IsSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 	VkSampleCountFlagBits GetMaxUsableSampleCount(VkPhysicalDevice physicalDevice);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicaldevice, VkSurfaceKHR surface);
 	bool CheckExtensionSupport(VkPhysicalDevice physicalDevice);
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-	void CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, ValidationLayers& validationLayers);
+	VkDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, ValidationLayers& validationLayers);
 	void CreateSwapChain(VkPhysicalDevice physicalDevice, Window& window);
 
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window);
 };
-

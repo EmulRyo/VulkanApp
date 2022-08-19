@@ -19,11 +19,6 @@ struct Vertex {
     static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
 };
 
-struct Texture {
-    unsigned int id;
-    std::string type;
-};
-
 struct Material {
     std::string name;
     glm::vec3 diffuse;
@@ -37,7 +32,7 @@ struct Material {
 class Mesh
 {
 public:
-    Mesh(Device *device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, Material *material);
+    Mesh(Device& device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, Material *material);
     Mesh(const Mesh& other);
     ~Mesh();
     size_t GetNumVertices() { return m_vertices.size(); };
@@ -46,7 +41,7 @@ public:
     void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
 
 private:
-    Device* m_device;
+    Device& m_device;
     // mesh data
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_indices;
@@ -60,9 +55,5 @@ private:
 private:
     void CreateVertexBuffer();
     void CreateIndexBuffer();
-
-    void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-    uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 };
 
