@@ -13,36 +13,24 @@ struct QueueFamilyIndices {
 	bool isComplete();
 };
 
-struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
-
 class Device
 {
 public:
 	Device(VkInstance instance, Window &window, ValidationLayers& validationLayers);
 	~Device();
 
+	VkDevice Get() { return m_device; }
+
 	VkQueue GetGraphicsQueue() { return m_graphicsQueue; }
 	VkQueue GetPresentQueue() { return m_presentQueue; }
 
-	VkSampleCountFlagBits GetMSAASamples() { return m_msaaSamples; };
+	VkSampleCountFlagBits GetMSAASamples() { return m_msaaSamples; }
 	VkCommandPool GetCommandPool() { return m_commandPool; }
 	void GetProperties(VkPhysicalDeviceProperties* props);
 	void GetFormatProperties(VkFormat format, VkFormatProperties* props);
 	void GetMemoryProperties(VkPhysicalDeviceMemoryProperties* props);
 	QueueFamilyIndices FindQueueFamilies();
-
-	void CreateSwapChain();
-	VkSwapchainKHR GetSwapChain() { return m_swapChain; };
-	std::vector<VkImageView>& GetSwapChainImageViews() { return m_swapChainImageViews; }
-	VkFormat GetSwapChainImageFormat() { return m_swapChainImageFormat; }
-	VkExtent2D GetSwapChainExtent() { return m_swapChainExtent; }
-	void DestroySwapchain(VkSwapchainKHR swapchain) { vkDestroySwapchainKHR(m_device, swapchain, nullptr); }
-
-	void CreateImageViews();
+	VkPhysicalDevice GetPhysicalDevice() { return m_physicalDevice; }
 
 	VkCommandPool CreateCommandPool();
 	void DestroyCommandPool(VkCommandPool commandPool);
@@ -156,12 +144,6 @@ public:
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-	VkResult AcquireNextImage(
-		uint64_t timeout,
-		VkSemaphore semaphore,
-		VkFence fence,
-		uint32_t* pImageIndex);
-
 	void DrawCommandBufferSubmit(
 		const VkSemaphore& waitSemaphore,
 		const VkPipelineStageFlags& waitDstStageMask,
@@ -196,6 +178,8 @@ public:
 
 	VkResult WaitIdle() { return vkDeviceWaitIdle(m_device); }
 
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicaldevice, VkSurfaceKHR surface);
+
 	static bool HasStencilComponent(VkFormat format);
 	static void Print(int id, VkPhysicalDevice device);
 
@@ -211,24 +195,11 @@ private:
 	VkQueue m_presentQueue = VK_NULL_HANDLE;
 	VkCommandPool m_commandPool = VK_NULL_HANDLE;
 
-	VkSwapchainKHR m_swapChain;
-	VkFormat m_swapChainImageFormat;
-	VkExtent2D m_swapChainExtent;
-	std::vector<VkImage> m_swapChainImages;
-	std::vector<VkImageView> m_swapChainImageViews;
-
 	void PrintAllPhysicalDevices();
 	VkPhysicalDevice SelectPhysicalDevice(VkSurfaceKHR surface);
 	bool IsSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 	VkSampleCountFlagBits GetMaxUsableSampleCount(VkPhysicalDevice physicalDevice);
-	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicaldevice, VkSurfaceKHR surface);
 	bool CheckExtensionSupport(VkPhysicalDevice physicalDevice);
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 	VkDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, ValidationLayers& validationLayers);
-	void CreateSwapChain(VkPhysicalDevice physicalDevice, Window& window);
-
-	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window);
 };

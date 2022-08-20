@@ -14,6 +14,7 @@
 class Device;
 class Model;
 class Texture;
+class Swapchain;
 
 class VulkanApp {
 public:
@@ -36,6 +37,7 @@ private:
     ValidationLayers m_validationLayers;
     VkInstance m_instance;
     Device* m_device;
+    Swapchain* m_swapchain;
 
     VkRenderPass renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
