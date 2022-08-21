@@ -4,6 +4,7 @@
 
 class Device;
 class Window;
+class RenderImage;
 
 class Swapchain
 {
@@ -22,12 +23,15 @@ public:
 	std::vector<VkImageView>& GetImageViews() { return m_imageViews; }
 	VkFormat GetImageFormat() { return m_imageFormat; }
 	VkExtent2D GetExtent() { return m_extent; }
+	const VkFramebuffer &GetFramebuffer(size_t index) { return m_framebuffers[index]; }
 
 	VkResult AcquireNextImage(
 		uint64_t timeout,
 		VkSemaphore semaphore,
 		VkFence fence,
 		uint32_t* pImageIndex);
+
+	void CreateFramebuffers(const RenderImage& color, const RenderImage& depth, const VkRenderPass renderPass);
 
 	static Swapchain::SupportDetails QuerySupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
@@ -38,6 +42,7 @@ private:
 	VkExtent2D m_extent;
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
+	std::vector<VkFramebuffer> m_framebuffers;
 
 	VkSwapchainKHR Create(VkPhysicalDevice physicalDevice, Window& window);
 	void CreateImageViews();

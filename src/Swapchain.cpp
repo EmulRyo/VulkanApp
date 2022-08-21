@@ -1,7 +1,8 @@
 #include <algorithm>
+#include <array>
 
 #include "Device.h"
-
+#include "RenderImage.h"
 #include "Swapchain.h"
 
 Swapchain::Swapchain(Device& device, Window& window):
@@ -12,6 +13,9 @@ m_device(device)
 }
 
 Swapchain::~Swapchain() {
+    for (size_t i = 0; i < m_framebuffers.size(); i++)
+        m_device.DestroyFramebuffer(m_framebuffers[i]);
+    
     for (size_t i = 0; i < m_imageViews.size(); i++)
         m_device.DestroyImageView(m_imageViews[i]);
 
@@ -155,4 +159,29 @@ VkResult Swapchain::AcquireNextImage(
     uint32_t* pImageIndex)
 {
     return vkAcquireNextImageKHR(m_device.Get(), m_swapchain, timeout, semaphore, fence, pImageIndex);
+}
+
+void Swapchain::CreateFramebuffers(const RenderImage& color, const RenderImage& depth, const VkRenderPass renderPass) {
+    m_framebuffers.resize(m_imageViews.size());
+
+    for (size_t i = 0; i < m_imageViews.size(); i++) {
+        std::array<VkImageView, 3> attachments = {
+            color.GetView(),
+            depth.GetView(),
+            m_imageViews[i]
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
+        framebufferInfo.width = m_extent.width;
+        framebufferInfo.height = m_extent.height;
+        framebufferInfo.layers = 1;
+
+        if (m_device.CreateFramebuffer(&framebufferInfo, &m_framebuffers[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create framebuffer!");
+        }
+    }
 }

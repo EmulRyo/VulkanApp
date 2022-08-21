@@ -15,6 +15,7 @@ class Device;
 class Model;
 class Texture;
 class Swapchain;
+class RenderImage;
 
 class VulkanApp {
 public:
@@ -39,11 +40,10 @@ private:
     Device* m_device;
     Swapchain* m_swapchain;
 
-    VkRenderPass renderPass;
+    VkRenderPass m_renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -61,13 +61,8 @@ private:
     
     Texture* m_texture;
 
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
-
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    RenderImage* m_color;
+    RenderImage* m_depth;
 
     static std::vector<char> readFile(const std::string& filename);
     void FramebufferResizeCallback(int width, int height);
@@ -83,8 +78,7 @@ private:
     void createRenderPass();
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
-
-    void createFramebuffers();
+    void CreateRenderImages();
 
     void createCommandBuffers();
 
@@ -99,13 +93,9 @@ private:
 
     void updateUniformBuffer(uint32_t currentImage);
 
-    void createColorResources();
-    void createDepthResources();
+    VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkFormat FindDepthFormat();
 
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    VkFormat findDepthFormat();
-
-    void mainLoop();
     void drawFrame();
 
     void cleanupSwapChain();

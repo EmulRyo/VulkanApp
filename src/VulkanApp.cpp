@@ -24,6 +24,7 @@
 #include "Model.h"
 #include "Texture.h"
 #include "Swapchain.h"
+#include "RenderImage.h"
 #include "VulkanApp.h"
 
 struct UniformBufferObject {
@@ -49,7 +50,10 @@ VulkanApp::~VulkanApp() {
 }
 
 void VulkanApp::run() {
-    mainLoop();
+    while (!m_window.ShouldClose()) {
+        m_window.PollEvents();
+        drawFrame();
+    }
 }
 
 std::vector<char> VulkanApp::readFile(const std::string& filename) {
@@ -138,9 +142,9 @@ void VulkanApp::initVulkan() {
     createDescriptorSetLayout();
 
     createGraphicsPipeline();
-    createColorResources();
-    createDepthResources();
-    createFramebuffers();
+
+    CreateRenderImages();
+    m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
 
     m_texture = new Texture(*m_device, TEXTURE_PATH);
     
@@ -170,9 +174,14 @@ void VulkanApp::recreateSwapChain() {
 
     createRenderPass();
     createGraphicsPipeline();
-    createColorResources();
-    createDepthResources();
-    createFramebuffers();
+    CreateRenderImages();
+    m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
+}
+
+void VulkanApp::CreateRenderImages() {
+    VkExtent2D extent = m_swapchain->GetExtent();
+    m_color = new RenderImage(*m_device, m_swapchain->GetImageFormat(), extent, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+    m_depth = new RenderImage(*m_device, FindDepthFormat(), extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanApp::createRenderPass() {
@@ -201,7 +210,7 @@ void VulkanApp::createRenderPass() {
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
+    depthAttachment.format = FindDepthFormat();
     depthAttachment.samples = m_device->GetMSAASamples();
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -243,7 +252,7 @@ void VulkanApp::createRenderPass() {
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (m_device->CreateRenderPass(&renderPassInfo, &renderPass) != VK_SUCCESS) {
+    if (m_device->CreateRenderPass(&renderPassInfo, &m_renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
@@ -417,7 +426,7 @@ void VulkanApp::createGraphicsPipeline() {
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = nullptr; // Optional
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     pipelineInfo.basePipelineIndex = -1; // Optional
@@ -428,31 +437,6 @@ void VulkanApp::createGraphicsPipeline() {
 
     m_device->DestroyShaderModule(fragShaderModule);
     m_device->DestroyShaderModule(vertShaderModule);
-}
-
-void VulkanApp::createFramebuffers() {
-    swapChainFramebuffers.resize(m_swapchain->GetImageViews().size());
-
-    for (size_t i = 0; i < m_swapchain->GetImageViews().size(); i++) {
-        std::array<VkImageView, 3> attachments = {
-            colorImageView,
-            depthImageView,
-            m_swapchain->GetImageViews()[i]
-        };
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
-        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferInfo.pAttachments = attachments.data();
-        framebufferInfo.width = m_swapchain->GetExtent().width;
-        framebufferInfo.height = m_swapchain->GetExtent().height;
-        framebufferInfo.layers = 1;
-
-        if (m_device->CreateFramebuffer(&framebufferInfo, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
-    }
 }
 
 void VulkanApp::createCommandBuffers() {
@@ -579,8 +563,8 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer = m_swapchain->GetFramebuffer(imageIndex);
     renderPassInfo.renderArea.offset = { 0, 0 };
     renderPassInfo.renderArea.extent = m_swapchain->GetExtent();
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -618,23 +602,7 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     m_device->UnmapMemory(m_uniformBuffersMemory[currentImage]);
 }
 
-void VulkanApp::createColorResources() {
-    VkFormat colorFormat = m_swapchain->GetImageFormat();
-    VkExtent2D extent = m_swapchain->GetExtent();
-
-    m_device->CreateImage(extent.width, extent.height, 1, m_device->GetMSAASamples(), colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-    colorImageView = m_device->CreateImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-}
-
-void VulkanApp::createDepthResources() {
-    VkFormat depthFormat = findDepthFormat();
-    VkExtent2D extent = m_swapchain->GetExtent();
-
-    m_device->CreateImage(extent.width, extent.height, 1, m_device->GetMSAASamples(), depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-    depthImageView = m_device->CreateImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-}
-
-VkFormat VulkanApp::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+VkFormat VulkanApp::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
         m_device->GetFormatProperties(format, &props);
@@ -650,19 +618,12 @@ VkFormat VulkanApp::findSupportedFormat(const std::vector<VkFormat>& candidates,
     throw std::runtime_error("failed to find supported format!");
 }
 
-VkFormat VulkanApp::findDepthFormat() {
-    return findSupportedFormat(
+VkFormat VulkanApp::FindDepthFormat() {
+    return FindSupportedFormat(
         { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
-}
-
-void VulkanApp::mainLoop() {
-    while (!m_window.ShouldClose()) {
-        m_window.PollEvents();
-        drawFrame();
-    }
 }
 
 void VulkanApp::drawFrame() {
@@ -720,22 +681,13 @@ void VulkanApp::drawFrame() {
 }
 
 void VulkanApp::cleanupSwapChain() {
-    m_device->DestroyImageView(colorImageView);
-    m_device->DestroyImage(colorImage);
-    m_device->FreeMemory(colorImageMemory);
-    m_device->DestroyImageView(depthImageView);
-    m_device->DestroyImage(depthImage);
-    m_device->FreeMemory(depthImageMemory);
-
-    for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
-        m_device->DestroyFramebuffer(swapChainFramebuffers[i]);
-    }
-
+    delete m_color;
+    delete m_depth;
     delete m_swapchain;
 
     m_device->DestroyPipeline(graphicsPipeline);
     m_device->DestroyPipelineLayout(pipelineLayout);
-    m_device->DestroyRenderPass(renderPass);
+    m_device->DestroyRenderPass(m_renderPass);
 }
 
 void VulkanApp::cleanup() {
