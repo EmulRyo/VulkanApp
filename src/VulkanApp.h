@@ -16,6 +16,7 @@ class Model;
 class Texture;
 class Swapchain;
 class RenderImage;
+class Shader;
 
 class VulkanApp {
 public:
@@ -39,9 +40,9 @@ private:
     VkInstance m_instance;
     Device* m_device;
     Swapchain* m_swapchain;
+    Shader* m_shader;
 
     VkRenderPass m_renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 
@@ -53,18 +54,11 @@ private:
     uint32_t currentFrame = 0;
 
     Model *m_model;
-
-    std::vector<VkBuffer> m_uniformBuffers;
-    std::vector<VkDeviceMemory> m_uniformBuffersMemory;
-    VkDescriptorPool m_descriptorPool;
-    std::vector<VkDescriptorSet> m_descriptorSets;
-    
     Texture* m_texture;
 
     RenderImage* m_color;
     RenderImage* m_depth;
 
-    static std::vector<char> readFile(const std::string& filename);
     void FramebufferResizeCallback(int width, int height);
 
     void initVulkan();
@@ -76,18 +70,12 @@ private:
     void recreateSwapChain();
 
     void createRenderPass();
-    void createDescriptorSetLayout();
     void createGraphicsPipeline();
     void CreateRenderImages();
 
     void createCommandBuffers();
 
     void createSyncObjects();
-
-    void createUniformBuffers();
-
-    void createDescriptorPool();
-    void createDescriptorSets();
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 

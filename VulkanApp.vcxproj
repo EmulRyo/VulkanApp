@@ -157,6 +157,7 @@
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\RenderImage.cpp" />
+    <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Swapchain.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\ValidationLayers.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Model.h" />
     <ClInclude Include="src\RenderImage.h" />
+    <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\Swapchain.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\ValidationLayers.h" />
