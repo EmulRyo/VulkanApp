@@ -1,10 +1,14 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #pragma warning( push )
 #pragma warning( disable: 26812 )
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #pragma warning( pop )
+
+#include <glm/glm.hpp>
 
 #include <eventpp/callbacklist.h>
 
@@ -22,6 +26,14 @@ public:
 	void PollEvents();
 	void WaitEvents();
 	void EventSubscribe_OnFramebufferResize(const std::function<void(int width, int height)> func);
+	int  GetKey(int key) { return glfwGetKey(m_window, key); }
+	int  GetMouseButton(int button) { return glfwGetMouseButton(m_window, button); }
+	glm::vec2 GetMousePosition() {
+		double x, y;
+		glfwGetCursorPos(m_window, &x, &y);
+		return { (float)x, (float)y };
+	}
+	void SetInputMode(int mode, int value) { glfwSetInputMode(m_window, mode, value); }
 
 	void _FramebufferResizeCB(int width, int height);
 

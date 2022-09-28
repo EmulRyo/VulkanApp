@@ -152,10 +152,12 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\CameraController.cpp" />
     <ClCompile Include="src\Device.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Model.cpp" />
+    <ClCompile Include="src\Prism.cpp" />
     <ClCompile Include="src\RenderImage.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Swapchain.cpp" />
@@ -165,13 +167,18 @@
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\CameraController.h" />
     <ClInclude Include="src\Device.h" />
+    <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Model.h" />
+    <ClInclude Include="src\Prism.h" />
     <ClInclude Include="src\RenderImage.h" />
     <ClInclude Include="src\Shader.h" />
     <ClInclude Include="src\Swapchain.h" />
     <ClInclude Include="src\Texture.h" />
+    <ClInclude Include="src\Components.h" />
     <ClInclude Include="src\ValidationLayers.h" />
     <ClInclude Include="src\VulkanApp.h" />
     <ClInclude Include="src\Window.h" />

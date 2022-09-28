@@ -40,7 +40,9 @@ void Model::Load(const std::string& path) {
         aiProcess_GenNormals |
         aiProcess_Triangulate |
         aiProcess_FlipUVs |
-        aiProcess_ValidateDataStructure
+        aiProcess_ValidateDataStructure |
+        aiProcess_GenBoundingBoxes |
+        aiProcess_PreTransformVertices
         //aiProcess_GlobalScale
     );
 
@@ -50,6 +52,24 @@ void Model::Load(const std::string& path) {
         return;
     }
     m_directory = path.substr(0, path.find_last_of('/'));
+
+    aiMatrix4x4 m = scene->mRootNode->mTransformation;
+
+    aiVector3D scale, rotation, position;
+    m.Decompose(scale, rotation, position);
+    Transform.Scale = glm::vec3(scale.x, scale.y, scale.z);
+    Transform.Rotation = glm::vec3(rotation.x, rotation.y, rotation.z);
+    Transform.Translation = glm::vec3(position.x, position.y, position.z);
+    spdlog::debug("Assimp rootNode:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n", 
+        m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+
+    if (scene->mRootNode->mMetaData) {
+        aiMetadata* metadata = scene->mRootNode->mMetaData;
+        spdlog::debug("Assimp metadata:");
+        for (unsigned int i = 0; i < metadata->mNumProperties; i++) {
+            spdlog::debug("{}: (type: {})", metadata->mKeys[i].C_Str(), metadata->mValues[i].mType);
+        }
+    }
 
     ProcessMaterials(scene);
     ProcessNode(scene->mRootNode, scene);
@@ -107,6 +127,18 @@ void Model::ProcessMaterials(const aiScene* scene) {
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene)
 {
+    aiVector3D scale, rotation, position;
+    aiMatrix4x4 m = node->mTransformation;
+    /*
+    node->mTransformation.Decompose(scale, rotation, position);
+    glm::vec3 scale = glm::vec3(scale.x, scale.y, scale.z);
+    glm::vec3 rotation = glm::vec3(rotation.x, rotation.y, rotation.z);
+    glm::vec3 translation = glm::vec3(position.x, position.y, position.z);
+    */
+
+    spdlog::debug("Assimp node:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n",
+        m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+
     // process all the node's meshes (if any)
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
@@ -181,5 +213,12 @@ Mesh *Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     if (mesh->mMaterialIndex >= 0)
         material = m_materials[mesh->mMaterialIndex];
 
-    return new Mesh(m_device, vertices, indices, material);
+    spdlog::debug("Boundingbox, min({}, {}, {}), max({}, {}, {})",
+        mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z,
+        mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+
+    glm::vec3 bboxMin = { mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z };
+    glm::vec3 bboxMax = { mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z };
+
+    return new Mesh(m_device, vertices, indices, material, bboxMin, bboxMax);
 }

@@ -18,6 +18,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include "Device.h"
 #include "Mesh.h"
@@ -26,6 +27,8 @@
 #include "Swapchain.h"
 #include "RenderImage.h"
 #include "Shader.h"
+#include "Camera.h"
+#include "Prism.h"
 #include "VulkanApp.h"
 
 struct UniformBufferObject {
@@ -34,16 +37,21 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 proj;
 };
 
-VulkanApp::VulkanApp():
+VulkanApp::VulkanApp() :
     m_window(WIDTH, HEIGHT, "Vulkan"),
     m_validationLayers({ "VK_LAYER_KHRONOS_validation" }),
-    m_instance(VK_NULL_HANDLE)
+    m_instance(VK_NULL_HANDLE),
+    m_camController(m_window, m_cam)
 {
     spdlog::set_level(spdlog::level::level_enum::trace);
 
     m_window.EventSubscribe_OnFramebufferResize(std::bind(&VulkanApp::FramebufferResizeCallback, this, std::placeholders::_1, std::placeholders::_2));
 
     initVulkan();
+
+    m_lastTime = std::chrono::high_resolution_clock::now();
+    VkExtent2D extent = m_swapchain->GetExtent();
+    m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.1f, 100.0f);
 }
 
 VulkanApp::~VulkanApp() {
@@ -52,8 +60,12 @@ VulkanApp::~VulkanApp() {
 
 void VulkanApp::run() {
     while (!m_window.ShouldClose()) {
-        m_window.PollEvents();
-        drawFrame();
+        ChronoTime currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
+        m_lastTime = currentTime;
+
+        Update(deltaTime);
+        Draw(deltaTime);
     }
 }
 
@@ -122,17 +134,21 @@ void VulkanApp::initVulkan() {
     m_device = new Device(m_instance, m_window, m_validationLayers);
     m_swapchain = new Swapchain(*m_device, m_window);
 
+    m_texture = new Texture(*m_device, TEXTURE_PATH);
+    m_gameObject.Model = new Model(*m_device, MODEL_PATH);
+    //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
+    m_axisR = new Prism(*m_device, 0.0f, 100.0f, -0.01f, +0.01f, -0.01f, +0.01f, { 1.0f, 0.0f, 0.0f });
+    m_axisG = new Prism(*m_device, -0.01f, +0.01f, 0.0f, 100.0f, -0.01f, +0.01f, { 0.0f, 1.0f, 0.0f });
+    m_axisB = new Prism(*m_device, -0.01f, +0.01f, -0.01f, +0.01f, 0.0f, 100.0f, { 0.0f, 0.0f, 1.0f });
+
     createRenderPass();
 
-    m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, sizeof(UniformBufferObject), "shaders/vert.spv", "shaders/frag.spv");
+    m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, GetBindings(), "shaders/vert.spv", "shaders/frag.spv");
 
     createGraphicsPipeline();
 
     CreateRenderImages();
     m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
-
-    m_texture = new Texture(*m_device, TEXTURE_PATH);
-    m_model = new Model(*m_device, MODEL_PATH);
 
     m_shader->CreateUniformBuffers();
     m_shader->CreateDescriptorPool();
@@ -140,7 +156,19 @@ void VulkanApp::initVulkan() {
 
     createCommandBuffers();
     createSyncObjects();
+}
 
+std::vector<Shader::Binding> VulkanApp::GetBindings() {
+    Shader::Binding binding1{};
+    binding1.Type = Shader::DescriptorType::Uniform;
+    binding1.Stage = Shader::StageSelection::Vertex;
+    binding1.UniformSize = sizeof(UniformBufferObject);
+    Shader::Binding binding2{};
+    binding2.Type = Shader::DescriptorType::Sampler;
+    binding2.Stage = Shader::StageSelection::Fragment;
+    binding2.UniformSize = 0;
+
+    return { binding1, binding2 };
 }
 
 void VulkanApp::recreateSwapChain() {
@@ -161,6 +189,8 @@ void VulkanApp::recreateSwapChain() {
     createGraphicsPipeline();
     CreateRenderImages();
     m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
+
+    m_cam.SetPerspectiveAspectRatio(width / (float)height);
 }
 
 void VulkanApp::CreateRenderImages() {
@@ -439,29 +469,16 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    m_model->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_axisR->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_axisG->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_axisB->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_gameObject.Model->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
 
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
-}
-
-void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-    VkExtent2D extent = m_swapchain->GetExtent();
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(6.0f, 6.0f, 6.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.1f, 100.0f);
-    ubo.proj[1][1] *= -1;
-
-    m_shader->UpdateUniformBuffer(currentImage, &ubo);
 }
 
 VkFormat VulkanApp::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -488,7 +505,43 @@ VkFormat VulkanApp::FindDepthFormat() {
     );
 }
 
-void VulkanApp::drawFrame() {
+void PrintGlmMatrix(const glm::mat4& m, const std::string& name) {
+    glm::vec3 scale;
+    glm::quat orientation;
+    glm::vec3 translation;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(m, scale, orientation, translation, skew, perspective);
+
+    glm::vec3 angles = glm::eulerAngles(orientation);
+    spdlog::debug("{}", name);
+    spdlog::debug("translation: {}, {}, {}", translation.x, translation.y, translation.z);
+    spdlog::debug("orientation: {}, {}, {}", glm::degrees(angles.x), glm::degrees(angles.y), glm::degrees(angles.z));
+    spdlog::debug("scale: {}, {}, {}", scale.x, scale.y, scale.z);
+    spdlog::debug("");
+}
+
+void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = m_gameObject.Transform.GetMatrix() * m_gameObject.Model->Transform.GetMatrix();
+    ubo.view = m_cam.GetView();;
+    ubo.proj = m_cam.GetProjection();
+
+    m_shader->UpdateUniformBuffer(0, currentImage, &ubo);
+}
+
+void VulkanApp::Update(float deltaTime) {
+    m_window.PollEvents();
+    
+    m_camController.Update(deltaTime);
+}
+
+void VulkanApp::Draw(float deltaTime) {
     m_device->WaitForFences(1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -559,7 +612,10 @@ void VulkanApp::cleanup() {
 
     delete m_texture;
     delete m_shader;
-    delete m_model;
+    delete m_gameObject.Model;
+    delete m_axisR;
+    delete m_axisG;
+    delete m_axisB;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_device->DestroySemaphore(renderFinishedSemaphores[i]);

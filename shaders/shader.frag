@@ -15,7 +15,7 @@ void main() {
     vec3 normal = normalize(fragNormal);
     float diffuseIntensity = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = diffuseIntensity * vec3(1);
-    outColor = vec4(ambient + diffuse, 1);
+    outColor = vec4(fragColor*(ambient + diffuse), 1);
 
     //outColor = texture(texSampler, fragTexCoord);
 }

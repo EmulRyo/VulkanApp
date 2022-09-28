@@ -39,11 +39,20 @@ std::array<VkVertexInputAttributeDescription, 4> Vertex::getAttributeDescription
     return attributeDescriptions;
 }
 
-Mesh::Mesh(Device& device, std::vector<Vertex> vertices, std::vector<unsigned int> indices, Material *material):
+Mesh::Mesh(
+    Device& device, 
+    const std::vector<Vertex>& vertices, 
+    const std::vector<unsigned int>& indices, 
+    Material *material,
+    const glm::vec3& bboxMin,
+    const glm::vec3& bboxMax)
+:
     m_device(device),
     m_vertices(vertices),
     m_indices(indices),
-    m_material(material)
+    m_material(material),
+    m_bboxMin(bboxMin),
+    m_bboxMax(bboxMax)
 {
 
     CreateVertexBuffer();
@@ -51,7 +60,7 @@ Mesh::Mesh(Device& device, std::vector<Vertex> vertices, std::vector<unsigned in
 }
 
 Mesh::Mesh(const Mesh& other) :
-    Mesh(other.m_device, other.m_vertices, other.m_indices, other.m_material)
+    Mesh(other.m_device, other.m_vertices, other.m_indices, other.m_material, other.m_bboxMin, other.m_bboxMin)
 {
 
 }

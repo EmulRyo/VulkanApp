@@ -9,14 +9,17 @@
 #include <glm/glm.hpp>
 
 #include "Window.h"
+#include "Shader.h"
 #include "ValidationLayers.h"
+#include "Camera.h"
+#include "CameraController.h"
 
 class Device;
 class Model;
 class Texture;
 class Swapchain;
 class RenderImage;
-class Shader;
+class Prism;
 
 class VulkanApp {
 public:
@@ -28,9 +31,11 @@ public:
 private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
-    //const std::string MODEL_PATH = "models/shiba/1.fbx";
+    const std::string MODEL_PATH = "models/shiba/1.fbx";
     //const std::string MODEL_PATH = "models/swamp-location/map_1.obj";
-    const std::string MODEL_PATH = "models/che/scene.gltf";
+    //const std::string MODEL_PATH = "models/backpack/backpack.obj";
+    //const std::string MODEL_PATH = "models/pony-cartoon/Pony_cartoon.obj";
+    //const std::string MODEL_PATH = "models/che/scene.gltf";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -53,15 +58,23 @@ private:
     bool m_framebufferResized = false;
     uint32_t currentFrame = 0;
 
-    Model *m_model;
+    GameObject m_gameObject;
     Texture* m_texture;
 
     RenderImage* m_color;
     RenderImage* m_depth;
 
+    using ChronoTime = std::chrono::steady_clock::time_point;
+    Camera m_cam;
+    CameraController m_camController;
+    ChronoTime m_lastTime;
+    Prism *m_axisR, * m_axisG, * m_axisB;
+
     void FramebufferResizeCallback(int width, int height);
 
     void initVulkan();
+
+    std::vector<Shader::Binding> GetBindings();
 
     void checkExtensions();
 
@@ -84,7 +97,8 @@ private:
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat FindDepthFormat();
 
-    void drawFrame();
+    void Update(float deltaTime);
+    void Draw(float deltaTime);
 
     void cleanupSwapChain();
     void cleanup();

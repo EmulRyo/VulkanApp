@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+#include "Components.h"
+
 struct aiNode;
 struct aiScene;
 struct aiMesh;
@@ -18,6 +20,8 @@ public:
     Model(Device& device, const std::string &path): m_device(device) { Load(path); }
     ~Model();
     void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
+
+    TransformComponent Transform;
 private:
     Device& m_device;
     // model data

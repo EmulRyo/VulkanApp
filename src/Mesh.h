@@ -32,7 +32,14 @@ struct Material {
 class Mesh
 {
 public:
-    Mesh(Device& device, std::vector<Vertex> vertices, std::vector<uint32_t> indices, Material *material);
+    Mesh(
+        Device& device, 
+        const std::vector<Vertex>& vertices, 
+        const std::vector<uint32_t>& indices, 
+        Material *material, 
+        const glm::vec3& bboxMin, 
+        const glm::vec3& bboxMax
+    );
     Mesh(const Mesh& other);
     ~Mesh();
     size_t GetNumVertices() { return m_vertices.size(); };
@@ -46,6 +53,8 @@ private:
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_indices;
     Material *m_material;
+    glm::vec3 m_bboxMin;
+    glm::vec3 m_bboxMax;
 
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;

@@ -7,13 +7,13 @@
 #include "Device.h"
 #include "Shader.h"
 
-Shader::Shader(Device& device, int maxFramesInFlight, size_t sizeUniform, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename):
+Shader::Shader(Device& device, int maxFramesInFlight, std::vector<Binding> bindings, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename):
     m_device(device),
     m_maxFramesInFlight(maxFramesInFlight),
-    m_sizeUniform(sizeUniform)
+    m_bindings(bindings)
 {
-    CreateDescriptorSetLayout();
-    CreateStages(vertexShaderFilename, fragmentShaderFilename);
+    m_descriptorSetLayout = CreateDescriptorSetLayout(bindings);
+    m_stages = CreateStages(vertexShaderFilename, fragmentShaderFilename);
 }
 
 Shader::~Shader() {
@@ -27,33 +27,46 @@ Shader::~Shader() {
     m_device.DestroyDescriptorSetLayout(m_descriptorSetLayout);
 }
 
-void Shader::CreateDescriptorSetLayout() {
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+VkDescriptorSetLayout Shader::CreateDescriptorSetLayout(std::vector<Binding>& bindings) {
 
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+    for (int i = 0; i < bindings.size(); i++) {
+        VkDescriptorSetLayoutBinding layoutBinding{};
+        layoutBinding.binding = i;
+        layoutBinding.descriptorCount = 1;
 
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+        if (bindings[i].Stage == StageSelection::Vertex)
+            layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        else if (bindings[i].Stage == StageSelection::Fragment)
+            layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        else if (bindings[i].Stage == StageSelection::All)
+            layoutBinding.stageFlags = VK_SHADER_STAGE_ALL;
+
+        if (bindings[i].Type == DescriptorType::Uniform) {
+            layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+        else if (bindings[i].Type == DescriptorType::Sampler) {
+            layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            layoutBinding.pImmutableSamplers = nullptr; // Optional
+        }
+        layoutBindings.push_back(layoutBinding);
+    }
+
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-    layoutInfo.pBindings = bindings.data();
+    layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+    layoutInfo.pBindings = layoutBindings.data();
 
-    if (m_device.CreateDescriptorSetLayout(&layoutInfo, &m_descriptorSetLayout) != VK_SUCCESS) {
+    VkDescriptorSetLayout layout;
+
+    if (m_device.CreateDescriptorSetLayout(&layoutInfo, &layout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
+
+    return layout;
 }
 
-void Shader::CreateStages(const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename) {
+std::vector<VkPipelineShaderStageCreateInfo> Shader::CreateStages(const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename) {
     auto vertShaderCode = ReadFile(vertexShaderFilename);
     auto fragShaderCode = ReadFile(fragmentShaderFilename);
 
@@ -72,7 +85,7 @@ void Shader::CreateStages(const std::string& vertexShaderFilename, const std::st
     fragShaderStageInfo.module = m_fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
-    m_stages = { vertShaderStageInfo, fragShaderStageInfo };
+    return { vertShaderStageInfo, fragShaderStageInfo };
 }
 
 std::vector<char> Shader::ReadFile(const std::string& filename) {
@@ -92,22 +105,31 @@ std::vector<char> Shader::ReadFile(const std::string& filename) {
 }
 
 void Shader::CreateUniformBuffers() {
-    VkDeviceSize bufferSize = m_sizeUniform;
+    for (int i = 0; i < m_bindings.size(); i++) {
+        if (m_bindings[i].Type == DescriptorType::Uniform) {
+            VkDeviceSize bufferSize = m_bindings[i].UniformSize;
 
-    m_uniformBuffers.resize(m_maxFramesInFlight);
-    m_uniformBuffersMemory.resize(m_maxFramesInFlight);
+            m_bindings[i]._Offset = m_uniformBuffers.size();
+            m_uniformBuffers.resize(m_uniformBuffers.size() + m_maxFramesInFlight);
+            m_uniformBuffersMemory.resize(m_uniformBuffersMemory.size() + m_maxFramesInFlight);
 
-    for (size_t i = 0; i < m_maxFramesInFlight; i++) {
-        m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+            for (size_t j = 0; j < m_maxFramesInFlight; j++) {
+                m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[m_bindings[i]._Offset + j], m_uniformBuffersMemory[m_bindings[i]._Offset + j]);
+            }
+        }
     }
 }
 
 void Shader::CreateDescriptorPool() {
-    std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(m_maxFramesInFlight);
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(m_maxFramesInFlight);
+    std::vector<VkDescriptorPoolSize> poolSizes{};
+    poolSizes.resize(m_bindings.size());
+    for (int i = 0; i < m_bindings.size(); i++) {
+        if (m_bindings[i].Type == DescriptorType::Uniform)
+            poolSizes[i].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        else if (m_bindings[i].Type == DescriptorType::Sampler)
+            poolSizes[i].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[i].descriptorCount = static_cast<uint32_t>(m_maxFramesInFlight);
+    }
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -134,36 +156,41 @@ void Shader::CreateDescriptorSets(const VkDescriptorImageInfo& imageInfo) {
     }
 
     for (size_t i = 0; i < m_maxFramesInFlight; i++) {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = m_sizeUniform;
+        std::vector<VkWriteDescriptorSet> descriptorWrites{};
+        descriptorWrites.resize(m_bindings.size());
+        for (int j = 0; j < m_bindings.size(); j++) {
+            descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[j].dstSet = m_descriptorSets[i];
+            descriptorWrites[j].dstBinding = j;
+            descriptorWrites[j].dstArrayElement = 0;
+            descriptorWrites[j].descriptorCount = 1;
+            if (m_bindings[j].Type == DescriptorType::Uniform) {
+                VkDescriptorBufferInfo bufferInfo{};
+                bufferInfo.buffer = m_uniformBuffers[m_bindings[j]._Offset + i];
+                bufferInfo.offset = 0;
+                bufferInfo.range = m_bindings[j].UniformSize;
 
-        std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-        descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet = m_descriptorSets[i];
-        descriptorWrites[0].dstBinding = 0;
-        descriptorWrites[0].dstArrayElement = 0;
-        descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount = 1;
-        descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = m_descriptorSets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo = &imageInfo;
+                descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[j].pBufferInfo = &bufferInfo;
+            }
+            else if (m_bindings[j].Type == DescriptorType::Sampler) {
+                descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorWrites[j].pImageInfo = &imageInfo;
+            }
+        }
 
         m_device.UpdateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data());
     }
 }
 
-void Shader::UpdateUniformBuffer(uint32_t currentImage, void *data) {
+void Shader::UpdateUniformBuffer(uint32_t bindingID, uint32_t currentImage, void *data) {
+    if (m_bindings[bindingID].Type != DescriptorType::Uniform)
+        throw std::runtime_error("the binding is not a uniform buffer!");
+
+    uint32_t offset = m_bindings[bindingID]._Offset;
+
     void* dst;
-    m_device.MapMemory(m_uniformBuffersMemory[currentImage], 0, m_sizeUniform, 0, &dst);
-    memcpy(dst, data, m_sizeUniform);
-    m_device.UnmapMemory(m_uniformBuffersMemory[currentImage]);
+    m_device.MapMemory(m_uniformBuffersMemory[offset + currentImage], 0, m_bindings[bindingID].UniformSize, 0, &dst);
+    memcpy(dst, data, m_bindings[bindingID].UniformSize);
+    m_device.UnmapMemory(m_uniformBuffersMemory[offset + currentImage]);
 }

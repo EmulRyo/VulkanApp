@@ -21,8 +21,8 @@ public:
 	
 	VkSwapchainKHR Get() { return m_swapchain; };
 	std::vector<VkImageView>& GetImageViews() { return m_imageViews; }
-	VkFormat GetImageFormat() { return m_imageFormat; }
-	VkExtent2D GetExtent() { return m_extent; }
+	const VkFormat& GetImageFormat() const { return m_imageFormat; }
+	const VkExtent2D& GetExtent() const { return m_extent; }
 	const VkFramebuffer &GetFramebuffer(size_t index) { return m_framebuffers[index]; }
 
 	VkResult AcquireNextImage(

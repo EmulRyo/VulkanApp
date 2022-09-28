@@ -7,7 +7,27 @@ class Device;
 class Shader
 {
 public:
-	Shader(Device& device, int maxFramesInFlight, size_t sizeUniform, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename);
+	enum class DescriptorType {
+		Uniform,
+		Sampler
+	};
+
+	enum class StageSelection {
+		Vertex,
+		Fragment,
+		All
+	};
+
+	struct Binding {
+		DescriptorType Type;
+		StageSelection Stage;
+		size_t UniformSize; // Only for uniforms, not used in samplers
+
+		// Private
+		uint32_t _Offset;
+	};
+
+	Shader(Device& device, int maxFramesInFlight, std::vector<Binding> bindings, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename);
 	~Shader();
 
 	std::vector<VkPipelineShaderStageCreateInfo>& GetStages() { return m_stages; }
@@ -17,12 +37,12 @@ public:
 	void CreateUniformBuffers();
 	void CreateDescriptorPool();
 	void CreateDescriptorSets(const VkDescriptorImageInfo& imageInfo);
-	void UpdateUniformBuffer(uint32_t currentImage, void* data);
+	void UpdateUniformBuffer(uint32_t bindingID, uint32_t currentImage, void* data);
 
 private:
 	Device& m_device;
 	const int m_maxFramesInFlight;
-	size_t m_sizeUniform;
+	std::vector<Binding> m_bindings;
 	VkDescriptorSetLayout m_descriptorSetLayout;
 	VkDescriptorPool m_descriptorPool;
 	std::vector<VkDescriptorSet> m_descriptorSets;
@@ -32,8 +52,8 @@ private:
 	VkShaderModule m_vertShaderModule;
 	VkShaderModule m_fragShaderModule;
 
-	void CreateDescriptorSetLayout();
+	VkDescriptorSetLayout CreateDescriptorSetLayout(std::vector<Binding>& bindings);
 	std::vector<char> ReadFile(const std::string& filename);
-	void CreateStages(const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename);
+	std::vector<VkPipelineShaderStageCreateInfo> CreateStages(const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename);
 };
 
