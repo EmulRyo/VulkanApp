@@ -1,8 +1,6 @@
-#include <GLFW/glfw3.h>
-
-#include "Window.h"
 #include "Camera.h"
 #include "CameraController.h"
+#include "Window.h"
 
 CameraController::CameraController(Window& window, Camera& cam):
 	m_window(window),
