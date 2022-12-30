@@ -19,6 +19,7 @@ class Model;
 class Texture;
 class Swapchain;
 class RenderImage;
+class Axes;
 class Prism;
 
 class VulkanApp {
@@ -31,9 +32,9 @@ public:
 private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
-    const std::string MODEL_PATH = "models/shiba/1.fbx";
+    //const std::string MODEL_PATH = "models/shiba/1.fbx";
     //const std::string MODEL_PATH = "models/swamp-location/map_1.obj";
-    //const std::string MODEL_PATH = "models/backpack/backpack.obj";
+    const std::string MODEL_PATH = "models/backpack/backpack.obj";
     //const std::string MODEL_PATH = "models/pony-cartoon/Pony_cartoon.obj";
     //const std::string MODEL_PATH = "models/che/scene.gltf";
     const std::string TEXTURE_PATH = "textures/viking_room.png";
@@ -58,7 +59,7 @@ private:
     bool m_framebufferResized = false;
     uint32_t currentFrame = 0;
 
-    GameObject m_gameObject;
+    GameObject m_gameObject = GameObject("gameobject");
     Texture* m_texture;
 
     RenderImage* m_color;
@@ -68,7 +69,8 @@ private:
     Camera m_cam;
     CameraController m_camController;
     ChronoTime m_lastTime;
-    Prism *m_axisR, * m_axisG, * m_axisB;
+    Axes *m_axes;
+    Prism *m_floor;
 
     void FramebufferResizeCallback(int width, int height);
 

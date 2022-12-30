@@ -9,7 +9,17 @@
 
 #include <spdlog/spdlog.h>
 
-struct TransformComponent
+enum class ComponentType {
+	Transform,
+	Model
+};
+
+struct Component {
+	virtual ~Component() {};
+	virtual ComponentType GetType() = 0;
+};
+
+struct TransformComponent: Component
 {
 	TransformComponent() = default;
 	TransformComponent(const TransformComponent&) = default;
@@ -27,6 +37,9 @@ struct TransformComponent
 			* glm::translate(glm::mat4(1.0f), translation)
 			* glm::scale(glm::mat4(1.0f), Scale);
 	}
+
+	static ComponentType GetTypeStatic() { return ComponentType::Transform; }
+	ComponentType GetType() { return GetTypeStatic(); }
 
 	glm::vec3 Forward() { return glm::toMat3(glm::quat(Rotation)) * glm::vec3(0.0f, 1.0f, 0.0f); }
 	glm::vec3 Up()		{ return glm::toMat3(glm::quat(Rotation)) * glm::vec3(0.0f, 0.0f, 1.0f); }

@@ -3,19 +3,6 @@
 #include "Mesh.h"
 #include "Prism.h"
 
-Prism::~Prism() {
-    for (unsigned int i = 0; i < m_meshes.size(); i++)
-        delete m_meshes[i];
-    for (unsigned int i = 0; i < m_materials.size(); i++)
-        delete m_materials[i];
-}
-
-void Prism::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets)
-{
-    for (unsigned int i = 0; i < m_meshes.size(); i++)
-        m_meshes[i]->Draw(commandBuffer, pipelineLayout, descriptorSets);
-}
-
 void Prism::Load(float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, glm::vec3 color) {
     std::vector<Vertex> vertices{
         {{xMin, yMin, zMin}, {0.0f, 0.0f, 0.0f}, color, {0.0f, 0.0f}},

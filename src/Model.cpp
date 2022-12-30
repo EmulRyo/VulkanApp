@@ -14,6 +14,15 @@ class AssimpStream : public Assimp::LogStream {
 public: void write(const char* message) { spdlog::error("{}", message); }
 };
 
+Model::Model(Device& device, std::vector<Material*> materials, std::vector<Mesh*> meshes)
+    : m_device(device), m_materials(materials), m_meshes(meshes)
+{
+    for (int i = 0; i < m_meshes.size(); i++) {
+        m_numIndices += m_meshes[i]->GetNumIndices();
+        m_numVertices += m_meshes[i]->GetNumVertices();
+    }
+}
+
 Model::~Model() {
     for (unsigned int i = 0; i < m_meshes.size(); i++)
         delete m_meshes[i];
@@ -57,9 +66,11 @@ void Model::Load(const std::string& path) {
 
     aiVector3D scale, rotation, position;
     m.Decompose(scale, rotation, position);
+    
     Transform.Scale = glm::vec3(scale.x, scale.y, scale.z);
     Transform.Rotation = glm::vec3(rotation.x, rotation.y, rotation.z);
     Transform.Translation = glm::vec3(position.x, position.y, position.z);
+    
     spdlog::debug("Assimp rootNode:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n", 
         m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
 

@@ -28,6 +28,7 @@
 #include "RenderImage.h"
 #include "Shader.h"
 #include "Camera.h"
+#include "Axes.h"
 #include "Prism.h"
 #include "VulkanApp.h"
 
@@ -106,7 +107,7 @@ void VulkanApp::createInstance() {
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
 
     auto extensions = m_window.GetRequiredExtensions(m_validationLayers.IsEnabled());
 
@@ -135,11 +136,11 @@ void VulkanApp::initVulkan() {
     m_swapchain = new Swapchain(*m_device, m_window);
 
     m_texture = new Texture(*m_device, TEXTURE_PATH);
-    m_gameObject.Model = new Model(*m_device, MODEL_PATH);
     //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
-    m_axisR = new Prism(*m_device, 0.0f, 100.0f, -0.01f, +0.01f, -0.01f, +0.01f, { 1.0f, 0.0f, 0.0f });
-    m_axisG = new Prism(*m_device, -0.01f, +0.01f, 0.0f, 100.0f, -0.01f, +0.01f, { 0.0f, 1.0f, 0.0f });
-    m_axisB = new Prism(*m_device, -0.01f, +0.01f, -0.01f, +0.01f, 0.0f, 100.0f, { 0.0f, 0.0f, 1.0f });
+    m_gameObject.AddComponent(new Model(*m_device, MODEL_PATH));
+    m_axes = new Axes(*m_device, 100.0f, 0.02f);
+
+    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
 
     createRenderPass();
 
@@ -469,10 +470,9 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    m_axisR->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
-    m_axisG->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
-    m_axisB->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
-    m_gameObject.Model->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_floor->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_axes->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    m_gameObject.GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -528,7 +528,8 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     UniformBufferObject ubo{};
-    ubo.model = m_gameObject.Transform.GetMatrix() * m_gameObject.Model->Transform.GetMatrix();
+    TransformComponent* transform = m_gameObject.GetComponent<TransformComponent>();
+    ubo.model = transform->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
     ubo.view = m_cam.GetView();;
     ubo.proj = m_cam.GetProjection();
 
@@ -610,12 +611,12 @@ void VulkanApp::cleanup() {
 
     cleanupSwapChain();
 
+    m_gameObject.Dispose();
+
     delete m_texture;
     delete m_shader;
-    delete m_gameObject.Model;
-    delete m_axisR;
-    delete m_axisG;
-    delete m_axisB;
+    delete m_axes;
+    delete m_floor;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_device->DestroySemaphore(renderFinishedSemaphores[i]);

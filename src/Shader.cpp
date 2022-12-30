@@ -109,7 +109,7 @@ void Shader::CreateUniformBuffers() {
         if (m_bindings[i].Type == DescriptorType::Uniform) {
             VkDeviceSize bufferSize = m_bindings[i].UniformSize;
 
-            m_bindings[i]._Offset = m_uniformBuffers.size();
+            m_bindings[i]._Offset = (uint32_t)m_uniformBuffers.size();
             m_uniformBuffers.resize(m_uniformBuffers.size() + m_maxFramesInFlight);
             m_uniformBuffersMemory.resize(m_uniformBuffersMemory.size() + m_maxFramesInFlight);
 

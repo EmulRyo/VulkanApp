@@ -2,11 +2,8 @@
 
 #include <vulkan/vulkan.h>
 
-#pragma warning( push )
-#pragma warning( disable: 26812 )
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#pragma warning( pop )
 
 #include <glm/glm.hpp>
 

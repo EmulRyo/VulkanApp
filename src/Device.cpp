@@ -124,6 +124,7 @@ void Device::PrintAllPhysicalDevices() {
 }
 
 VkPhysicalDevice Device::SelectPhysicalDevice(VkSurfaceKHR surface) {
+    VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDevice selected = VK_NULL_HANDLE;
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
@@ -136,7 +137,8 @@ VkPhysicalDevice Device::SelectPhysicalDevice(VkSurfaceKHR surface) {
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
     for (const auto& device : devices) {
-        if (IsSuitable(device, surface)) {
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        if (IsSuitable(device, surface) && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
             selected = device;
             break;
         }
