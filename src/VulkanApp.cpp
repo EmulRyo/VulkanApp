@@ -137,7 +137,7 @@ void VulkanApp::initVulkan() {
 
     m_texture = new Texture(*m_device, TEXTURE_PATH);
     //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
-    m_gameObject.AddComponent(new Model(*m_device, MODEL_PATH));
+    m_gameObject.AddComponent<Model>(*m_device, MODEL_PATH);
     m_axes = new Axes(*m_device, 100.0f, 0.02f);
 
     m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
@@ -528,8 +528,7 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     UniformBufferObject ubo{};
-    TransformComponent* transform = m_gameObject.GetComponent<TransformComponent>();
-    ubo.model = transform->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
+    ubo.model = m_gameObject.GetComponent<Transform>()->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
     ubo.view = m_cam.GetView();;
     ubo.proj = m_cam.GetProjection();
 

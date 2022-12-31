@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Components.h"
+#include "Transform.h"
 
 struct aiNode;
 struct aiScene;
@@ -26,7 +27,7 @@ public:
     static ComponentType GetTypeStatic() { return ComponentType::Model; }
     ComponentType GetType() { return GetTypeStatic(); }
 
-    TransformComponent Transform;
+    Transform Transform;
 protected:
     Device& m_device;
     // model data

@@ -181,6 +181,7 @@
     <ClInclude Include="src\Swapchain.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\Components.h" />
+    <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\ValidationLayers.h" />
     <ClInclude Include="src\VulkanApp.h" />
     <ClInclude Include="src\Window.h" />

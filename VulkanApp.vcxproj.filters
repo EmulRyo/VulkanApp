@@ -118,5 +118,8 @@
     <ClInclude Include="src\Axes.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Transform.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
