@@ -11,9 +11,14 @@ public:
 	~Texture();
 
 	VkDescriptorImageInfo GetDescriptorImageInfo();
+	std::string GetFilename() const { return m_filename; }
+	int GetWidth() const { return m_width; }
+	int GetHeight() const { return m_height; }
+	int GetChannels() const { return m_channels; }
 
 private:
 	Device& m_device;
+	std::string m_filename;
 	bool mipmapping;
 	int m_width;
 	int m_height;

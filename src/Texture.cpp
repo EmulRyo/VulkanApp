@@ -7,7 +7,7 @@
 #include "Texture.h"
 
 Texture::Texture(Device& device, const std::string& filename, bool mipmapping)
-    : m_device(device)
+    : m_device(device), m_filename(filename)
 {
     CreateImage(filename);
     CreateImageView();

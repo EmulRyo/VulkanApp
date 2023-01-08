@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Mesh.h"
+#include "Texture.h"
 #include "Model.h"
 
 class AssimpStream : public Assimp::LogStream {
@@ -28,6 +29,8 @@ Model::~Model() {
         delete m_meshes[i];
     for (unsigned int i = 0; i < m_materials.size(); i++)
         delete m_materials[i];
+    for (unsigned int i = 0; i < m_textures.size(); i++)
+        delete m_textures[i];
 }
 
 void Model::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets)
@@ -96,7 +99,7 @@ void Model::ProcessMaterials(const aiScene* scene) {
 
         aiString name;
         mat->Get(AI_MATKEY_NAME, name);
-        material->name = name.C_Str();
+        material->Name = name.C_Str();
 
         int shadingModel = 0;
         mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
@@ -104,36 +107,51 @@ void Model::ProcessMaterials(const aiScene* scene) {
         aiColor3D vec3;
 
         mat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
-        material->diffuse = Material::ToGlm(vec3);
+        material->Diffuse = Material::ToGlm(vec3);
         mat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
-        material->ambient = Material::ToGlm(vec3);
+        material->Ambient = Material::ToGlm(vec3);
         mat->Get(AI_MATKEY_COLOR_SPECULAR, vec3);
-        material->specular = Material::ToGlm(vec3);
+        material->Specular = Material::ToGlm(vec3);
         mat->Get(AI_MATKEY_COLOR_EMISSIVE, vec3);
-        material->emissive = Material::ToGlm(vec3);
+        material->Emissive = Material::ToGlm(vec3);
+
+        aiString texPath;
+        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
+            mat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
+            Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
+            material->TexDiffuse = tex;
+            m_textures.push_back(tex);
+        }
+        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
+            mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
+            Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
+            material->TexSpecular = tex;
+            m_textures.push_back(tex);
+        }
 
         std::string shadingModeNames[] = {
             "Error", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
         };
 
-        spdlog::debug("Material {}: name={}, shadingModel={}", i, material->name, shadingModeNames[shadingModel]);
-        spdlog::debug("\tdiffuse  = ({:.3f}, {:.3f}, {:.3f})", material->diffuse.r, material->diffuse.g, material->diffuse.b);
-        spdlog::debug("\tambient  = ({:.3f}, {:.3f}, {:.3f})", material->ambient.r, material->ambient.g, material->ambient.b);
-        spdlog::debug("\tspecular = ({:.3f}, {:.3f}, {:.3f})", material->specular.r, material->specular.g, material->specular.b);
-        spdlog::debug("\temissive = ({:.3f}, {:.3f}, {:.3f})", material->emissive.r, material->emissive.g, material->emissive.b);
-
-        aiString texPath;
-        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
-            mat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
-            spdlog::debug("\ttex diffuse = {}", texPath.C_Str());
-        }
-        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
-            mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
-            spdlog::debug("\ttex specular = {}", texPath.C_Str());
-        }
+        spdlog::debug("Material {}: name={}, shadingModel={}", i, material->Name, shadingModeNames[shadingModel]);
+        PrintColor("\tdiffuse ", material->Diffuse);
+        PrintColor("\tambient ", material->Ambient);
+        PrintColor("\tspecular", material->Specular);
+        PrintColor("\temissive", material->Emissive);
+        PrintTexture("\ttex.diffuse ", material->TexDiffuse);
+        PrintTexture("\ttex.specular", material->TexSpecular);
 
         m_materials.push_back(material);
     }
+}
+
+void Model::PrintColor(const std::string& prefix, const glm::vec3 &color) {
+    spdlog::debug("{} = ({:.3f}, {:.3f}, {:.3f})", prefix, color.r, color.g, color.b);
+}
+
+void Model::PrintTexture(const std::string &prefix, const Texture* tex) {
+    if (tex)
+        spdlog::debug("{} = {}, ({}x{}x{})", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene)
@@ -159,7 +177,7 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
         m_numIndices += mesh->GetNumIndices();
         spdlog::debug(
             "Mesh {}: vertices: {}, indices: {}({} triangles), material: \"{}\"",
-            m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3, mesh->GetMaterial()->name);
+            m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3, mesh->GetMaterial()->Name);
         m_meshes.push_back(mesh);
     }
     // then do the same for each of its children

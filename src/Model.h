@@ -32,6 +32,7 @@ protected:
     Device& m_device;
     // model data
     std::vector<Material *> m_materials;
+    std::vector<Texture*> m_textures;
     std::vector<Mesh *> m_meshes;
     std::string m_directory;
     size_t m_numVertices = 0;
@@ -42,6 +43,7 @@ private:
     void ProcessMaterials(const aiScene* scene);
     void ProcessNode(aiNode* node, const aiScene* scene);
     Mesh *ProcessMesh(aiMesh* mesh, const aiScene* scene);
-    //std::vector<Texture> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+    void PrintColor(const std::string& prefix, const glm::vec3& color);
+    void PrintTexture(const std::string& prefix, const Texture* tex);
 };
 

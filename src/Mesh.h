@@ -8,6 +8,7 @@
 #include "assimp/types.h"
 
 class Device;
+class Texture;
 
 struct Vertex {
     glm::vec3 pos;
@@ -20,11 +21,13 @@ struct Vertex {
 };
 
 struct Material {
-    std::string name;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
-    glm::vec3 ambient;
-    glm::vec3 emissive;
+    std::string Name;
+    glm::vec3 Diffuse;
+    glm::vec3 Specular;
+    glm::vec3 Ambient;
+    glm::vec3 Emissive;
+    Texture* TexDiffuse;
+    Texture* TexSpecular;
 
     static glm::vec3 ToGlm(const aiColor3D &color3D) { return glm::vec3(color3D.r, color3D.g, color3D.b); };
 };
