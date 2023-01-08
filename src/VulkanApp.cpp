@@ -32,10 +32,11 @@
 #include "Prism.h"
 #include "VulkanApp.h"
 
-struct UniformBufferObject {
+struct GlobalUBO {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 viewproj;
 };
 
 VulkanApp::VulkanApp() :
@@ -135,9 +136,9 @@ void VulkanApp::initVulkan() {
     m_device = new Device(m_instance, m_window, m_validationLayers);
     m_swapchain = new Swapchain(*m_device, m_window);
 
-    m_texture = new Texture(*m_device, TEXTURE_PATH);
     //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
     m_gameObject.AddComponent<Model>(*m_device, MODEL_PATH);
+    m_texture = new Texture(*m_device, TEXTURE_PATH);
     m_axes = new Axes(*m_device, 100.0f, 0.02f);
 
     m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
@@ -163,7 +164,7 @@ std::vector<Shader::Binding> VulkanApp::GetBindings() {
     Shader::Binding binding1{};
     binding1.Type = Shader::DescriptorType::Uniform;
     binding1.Stage = Shader::StageSelection::Vertex;
-    binding1.UniformSize = sizeof(UniformBufferObject);
+    binding1.UniformSize = sizeof(GlobalUBO);
     Shader::Binding binding2{};
     binding2.Type = Shader::DescriptorType::Sampler;
     binding2.Stage = Shader::StageSelection::Fragment;
@@ -527,12 +528,13 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     auto currentTime = std::chrono::high_resolution_clock::now();
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    UniformBufferObject ubo{};
-    ubo.model = m_gameObject.GetComponent<Transform>()->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
-    ubo.view = m_cam.GetView();;
-    ubo.proj = m_cam.GetProjection();
+    GlobalUBO global{};
+    global.model = m_gameObject.GetComponent<Transform>()->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
+    global.view = m_cam.GetView();
+    global.proj = m_cam.GetProjection();
+    global.viewproj = m_cam.GetProjection() * m_cam.GetView();
 
-    m_shader->UpdateUniformBuffer(0, currentImage, &ubo);
+    m_shader->UpdateUniformBuffer(0, currentImage, &global);
 }
 
 void VulkanApp::Update(float deltaTime) {
