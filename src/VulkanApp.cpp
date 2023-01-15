@@ -32,6 +32,8 @@
 #include "Prism.h"
 #include "VulkanApp.h"
 
+static VulkanApp* s_instance;
+
 struct GlobalUBO {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
@@ -45,6 +47,7 @@ VulkanApp::VulkanApp() :
     m_instance(VK_NULL_HANDLE),
     m_camController(m_window, m_cam)
 {
+    s_instance = this;
     spdlog::set_level(spdlog::level::level_enum::trace);
 
     m_window.EventSubscribe_OnFramebufferResize(std::bind(&VulkanApp::FramebufferResizeCallback, this, std::placeholders::_1, std::placeholders::_2));
@@ -59,6 +62,10 @@ VulkanApp::VulkanApp() :
 VulkanApp::~VulkanApp() {
     cleanup();
 }
+
+VulkanApp* VulkanApp::GetInstance() { 
+    return s_instance; 
+};
 
 void VulkanApp::run() {
     while (!m_window.ShouldClose()) {
@@ -136,41 +143,56 @@ void VulkanApp::initVulkan() {
     m_device = new Device(m_instance, m_window, m_validationLayers);
     m_swapchain = new Swapchain(*m_device, m_window);
 
-    //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
-    m_gameObject.AddComponent<Model>(*m_device, MODEL_PATH);
-    m_texture = new Texture(*m_device, TEXTURE_PATH);
-    m_axes = new Axes(*m_device, 100.0f, 0.02f);
-
-    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
-
     createRenderPass();
+    
+    m_descriptorPool = DescriptorSet::CreateDescriptorPool(*m_device);
 
-    m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, GetBindings(), "shaders/vert.spv", "shaders/frag.spv");
+    m_globalLayout = DescriptorSet::CreateLayout(*m_device, GetGlobalBindings());
+    m_device->CreateBuffer(
+        sizeof(GlobalUBO) * MAX_FRAMES_IN_FLIGHT,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        m_globalBuffer,
+        m_globalMemory);
+    m_globalSet = DescriptorSet::AllocateDescriptorSets(*m_device, m_descriptorPool, m_globalLayout, MAX_FRAMES_IN_FLIGHT);
+    DescriptorSet::UpdateUniformDescriptorSets(*m_device, m_globalSet, 0, m_globalBuffer, sizeof(GlobalUBO));
+    
+    m_materialLayout = DescriptorSet::CreateLayout(*m_device, GetMaterialBindings());
+
+    m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, "shaders/vert.spv", "shaders/frag.spv");
 
     createGraphicsPipeline();
 
     CreateRenderImages();
     m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
 
-    m_shader->CreateUniformBuffers();
-    m_shader->CreateDescriptorPool();
-    m_shader->CreateDescriptorSets(m_texture->GetDescriptorImageInfo());
-
     createCommandBuffers();
     createSyncObjects();
+
+    //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
+    m_dummyTexture = new Texture(*m_device);
+    m_gameObject.AddComponent<Model>(*m_device, MODEL_PATH);
+    m_axes = new Axes(*m_device, 100.0f, 0.02f);
+
+    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
 }
 
-std::vector<Shader::Binding> VulkanApp::GetBindings() {
-    Shader::Binding binding1{};
-    binding1.Type = Shader::DescriptorType::Uniform;
+std::vector<DescriptorSet::Binding> VulkanApp::GetGlobalBindings() {
+    DescriptorSet::Binding binding1{};
+    binding1.Type = DescriptorSet::DescriptorType::Uniform;
     binding1.Stage = Shader::StageSelection::Vertex;
-    binding1.UniformSize = sizeof(GlobalUBO);
-    Shader::Binding binding2{};
-    binding2.Type = Shader::DescriptorType::Sampler;
+    DescriptorSet::Binding binding2{};
+    binding2.Type = DescriptorSet::DescriptorType::Sampler;
     binding2.Stage = Shader::StageSelection::Fragment;
-    binding2.UniformSize = 0;
 
     return { binding1, binding2 };
+}
+
+std::vector<DescriptorSet::Binding> VulkanApp::GetMaterialBindings() {
+    DescriptorSet::Binding binding1{};
+    binding1.Type = DescriptorSet::DescriptorType::Sampler;
+    binding1.Stage = Shader::StageSelection::Fragment;
+    
+    return { binding1 };
 }
 
 void VulkanApp::recreateSwapChain() {
@@ -362,10 +384,15 @@ void VulkanApp::createGraphicsPipeline() {
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
     dynamicState.pDynamicStates = dynamicStates.data();
 
+    std::vector<VkDescriptorSetLayout> layouts = {
+        m_globalLayout,
+        m_materialLayout
+    };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &m_shader->GetDescriptorSetLayout();
+    pipelineLayoutInfo.setLayoutCount = layouts.size();
+    pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -471,9 +498,9 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-    m_floor->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
-    m_axes->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
-    m_gameObject.GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, &m_shader->GetDescriptorSet(currentFrame));
+    //m_floor->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+    m_axes->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+    m_gameObject.GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -534,7 +561,7 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
 
-    m_shader->UpdateUniformBuffer(0, currentImage, &global);
+    DescriptorSet::UpdateUniformBuffer(*m_device, m_globalMemory, currentImage * sizeof(GlobalUBO), sizeof(GlobalUBO), &global);
 }
 
 void VulkanApp::Update(float deltaTime) {
@@ -614,7 +641,14 @@ void VulkanApp::cleanup() {
 
     m_gameObject.Dispose();
 
-    delete m_texture;
+    delete m_dummyTexture;
+
+    m_device->DestroyBuffer(m_globalBuffer);
+    m_device->FreeMemory(m_globalMemory);
+    m_device->DestroyDescriptorSetLayout(m_globalLayout);
+    m_device->DestroyDescriptorSetLayout(m_materialLayout);
+    m_device->DestroyDescriptorPool(m_descriptorPool);
+
     delete m_shader;
     delete m_axes;
     delete m_floor;

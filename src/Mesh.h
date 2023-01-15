@@ -29,6 +29,8 @@ struct Material {
     Texture* TexDiffuse;
     Texture* TexSpecular;
 
+    VkDescriptorSet descSet;
+
     static glm::vec3 ToGlm(const aiColor3D &color3D) { return glm::vec3(color3D.r, color3D.g, color3D.b); };
 };
 
@@ -48,7 +50,7 @@ public:
     size_t GetNumVertices() { return m_vertices.size(); };
     size_t GetNumIndices() { return m_indices.size(); };
     Material* GetMaterial() { return m_material; }
-    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
+    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet);
 
 private:
     Device& m_device;

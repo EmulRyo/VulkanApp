@@ -9,6 +9,8 @@
 
 #include "Mesh.h"
 #include "Texture.h"
+#include "DescriptorSet.h"
+#include "VulkanApp.h"
 #include "Model.h"
 
 class AssimpStream : public Assimp::LogStream {
@@ -33,10 +35,10 @@ Model::~Model() {
         delete m_textures[i];
 }
 
-void Model::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets)
+void Model::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet)
 {
     for (unsigned int i = 0; i < m_meshes.size(); i++)
-        m_meshes[i]->Draw(commandBuffer, pipelineLayout, descriptorSets);
+        m_meshes[i]->Draw(commandBuffer, pipelineLayout, globalSet);
 }
 
 void Model::Load(const std::string& path) {
@@ -85,15 +87,19 @@ void Model::Load(const std::string& path) {
         }
     }
 
-    ProcessMaterials(scene);
+    VkDescriptorPool pool = VulkanApp::GetInstance()->GetDescriptorPool();
+    VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
+    ProcessMaterials(scene, pool, layout);
     ProcessNode(scene->mRootNode, scene);
     spdlog::info(
         "Model \"{}\":\n{} meshes, {} vertices, {} indices ({} triangles)",path, m_meshes.size(), m_numVertices, m_numIndices, m_numIndices / 3);
 }
 
-void Model::ProcessMaterials(const aiScene* scene) {
+void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         Material* material = new Material();
+
+        material->descSet = DescriptorSet::AllocateDescriptorSet(m_device, pool, layout);
 
         aiMaterial* mat = scene->mMaterials[i];
 
@@ -122,6 +128,12 @@ void Model::ProcessMaterials(const aiScene* scene) {
             material->TexDiffuse = tex;
             m_textures.push_back(tex);
         }
+        if (material->TexDiffuse == nullptr)
+            material->TexDiffuse = VulkanApp::GetInstance()->GetDummyTexture();
+
+        VkDescriptorImageInfo imgInfo = material->TexDiffuse->GetDescriptorImageInfo();
+        DescriptorSet::UpdateSamplerDescriptorSet(m_device, material->descSet, 0, imgInfo);
+
         for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
             mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
             Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());

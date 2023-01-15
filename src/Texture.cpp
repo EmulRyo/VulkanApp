@@ -5,6 +5,15 @@
 
 #include "Device.h"
 #include "Texture.h"
+#include "DescriptorSet.h"
+
+Texture::Texture(Device& device)
+    : m_device(device)
+{
+    CreateImage();
+    CreateImageView();
+    CreateSampler();
+}
 
 Texture::Texture(Device& device, const std::string& filename, bool mipmapping)
     : m_device(device), m_filename(filename)
@@ -19,6 +28,33 @@ Texture::~Texture() {
     m_device.DestroyImageView(m_imageView);
     m_device.DestroyImage(m_image);
     m_device.FreeMemory(m_deviceMemory);
+}
+
+void Texture::CreateImage() {
+    m_width = m_height = 1;
+    m_channels = 4;
+    unsigned char pixels[] = {255, 255, 255, 255};
+    VkDeviceSize imageSize = m_width * m_height * m_channels;
+
+    m_mipLevels = 1;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    m_device.CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+    void* data;
+    m_device.MapMemory(stagingBufferMemory, 0, imageSize, 0, &data);
+    memcpy(data, pixels, static_cast<size_t>(imageSize));
+    m_device.UnmapMemory(stagingBufferMemory);
+
+    m_device.CreateImage(m_width, m_height, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_image, m_deviceMemory);
+
+    m_device.TransitionImageLayout(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
+    m_device.CopyBufferToImage(stagingBuffer, m_image, static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height));
+    GenerateMipmaps(m_image, VK_FORMAT_R8G8B8A8_SRGB, m_width, m_height, m_mipLevels);
+
+    m_device.DestroyBuffer(stagingBuffer);
+    m_device.FreeMemory(stagingBufferMemory);
 }
 
 void Texture::CreateImage(const std::string& filename) {

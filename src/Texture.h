@@ -7,6 +7,7 @@ class Device;
 class Texture
 {
 public:
+	Texture(Device& device);
 	Texture(Device &device, const std::string &filename, bool mipmapping=true);
 	~Texture();
 
@@ -29,6 +30,7 @@ private:
 	VkImageView m_imageView;
 	VkSampler m_sampler;
 
+	void CreateImage();
 	void CreateImage(const std::string& filename);
 	void GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	void CreateImageView();

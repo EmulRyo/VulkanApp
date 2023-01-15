@@ -1,5 +1,7 @@
 #include <spdlog/spdlog.h>
 
+#include "VulkanApp.h"
+#include "Texture.h"
 #include "Axes.h"
 
 void Axes::Load(float length, float thickness) {
@@ -27,7 +29,15 @@ void Axes::Load(float length, float thickness) {
 }
 
 Mesh* Axes::CreateMesh(std::vector<uint32_t> &indices, float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, glm::vec3 color) {
-    Material* material = nullptr;
+    VkDescriptorPool pool = VulkanApp::GetInstance()->GetDescriptorPool();
+    VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
+    Material* material = new Material();
+    material->descSet = DescriptorSet::AllocateDescriptorSet(m_device, pool, layout);
+    material->TexDiffuse = VulkanApp::GetInstance()->GetDummyTexture();
+
+    VkDescriptorImageInfo imgInfo = material->TexDiffuse->GetDescriptorImageInfo();
+    DescriptorSet::UpdateSamplerDescriptorSet(m_device, material->descSet, 0, imgInfo);
+
     std::vector<Vertex> vertices{
         {{xMin, yMin, zMin}, {0.0f, 0.0f, 0.0f}, color, {0.0f, 0.0f}},
         {{xMin, yMin, zMax}, {0.0f, 0.0f, 0.0f}, color, {0.0f, 0.0f}},

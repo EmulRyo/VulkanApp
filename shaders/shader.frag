@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(set = 1, binding = 0) uniform sampler2D texSampler;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragNormal;
@@ -17,5 +17,5 @@ void main() {
     vec3 diffuse = diffuseIntensity * vec3(1);
     outColor = vec4(fragColor*(ambient + diffuse), 1);
 
-    //outColor = texture(texSampler, fragTexCoord);
+    outColor = texture(texSampler, fragTexCoord)*outColor;
 }

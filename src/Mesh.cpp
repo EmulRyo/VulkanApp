@@ -1,6 +1,8 @@
 #include <array>
 
 #include "Device.h"
+#include "DescriptorSet.h"
+#include "Texture.h"
 
 #include "Mesh.h"
 
@@ -74,13 +76,19 @@ Mesh::~Mesh() {
     
 }
 
-void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet *descriptorSets)
+void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet)
 {
     VkBuffer vertexBuffers[] = { m_vertexBuffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, descriptorSets, 0, nullptr);
+
+    std::vector<VkDescriptorSet> combinedDescSets;
+    combinedDescSets.push_back(globalSet);
+    if ((m_material != nullptr) && (m_material->TexDiffuse != nullptr))
+        combinedDescSets.push_back(m_material->descSet);
+
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, combinedDescSets.size(), combinedDescSets.data(), 0, nullptr);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
 }

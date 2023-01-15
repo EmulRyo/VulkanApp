@@ -22,7 +22,7 @@ public:
     Model(Device& device, std::vector<Material*> materials, std::vector<Mesh*> meshes);
     Model(Device& device, const std::string &path): m_device(device) { Load(path); }
     ~Model();
-    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const VkDescriptorSet* descriptorSets);
+    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet);
 
     static ComponentType GetTypeStatic() { return ComponentType::Model; }
     ComponentType GetType() { return GetTypeStatic(); }
@@ -40,7 +40,7 @@ protected:
 
 private:
     void Load(const std::string &path);
-    void ProcessMaterials(const aiScene* scene);
+    void ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout);
     void ProcessNode(aiNode* node, const aiScene* scene);
     Mesh *ProcessMesh(aiMesh* mesh, const aiScene* scene);
     void PrintColor(const std::string& prefix, const glm::vec3& color);
