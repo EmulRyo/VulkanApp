@@ -154,7 +154,6 @@
   <ItemGroup>
     <ClCompile Include="src\Axes.cpp" />
     <ClCompile Include="src\CameraController.cpp" />
-    <ClCompile Include="src\DescriptorSet.cpp" />
     <ClCompile Include="src\Device.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
@@ -172,7 +171,6 @@
     <ClInclude Include="src\Axes.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\CameraController.h" />
-    <ClInclude Include="src\DescriptorSet.h" />
     <ClInclude Include="src\Device.h" />
     <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\Mesh.h" />

@@ -68,9 +68,6 @@
     <ClCompile Include="src\Axes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\DescriptorSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\VulkanApp.h">
@@ -122,9 +119,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Transform.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DescriptorSet.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

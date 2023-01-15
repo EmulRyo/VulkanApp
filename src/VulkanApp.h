@@ -10,7 +10,6 @@
 
 #include "Window.h"
 #include "Shader.h"
-#include "DescriptorSet.h"
 #include "ValidationLayers.h"
 #include "Camera.h"
 #include "CameraController.h"
@@ -89,8 +88,8 @@ private:
 
     void initVulkan();
 
-    std::vector<DescriptorSet::Binding> GetGlobalBindings();
-    std::vector<DescriptorSet::Binding> GetMaterialBindings();
+    std::vector<VkDescriptorSetLayoutBinding> GetGlobalBindings();
+    std::vector<VkDescriptorSetLayoutBinding> GetMaterialBindings();
 
     void checkExtensions();
 

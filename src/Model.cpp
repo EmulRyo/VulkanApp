@@ -9,7 +9,7 @@
 
 #include "Mesh.h"
 #include "Texture.h"
-#include "DescriptorSet.h"
+#include "Device.h"
 #include "VulkanApp.h"
 #include "Model.h"
 
@@ -99,7 +99,7 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         Material* material = new Material();
 
-        material->descSet = DescriptorSet::AllocateDescriptorSet(m_device, pool, layout);
+        material->descSet = m_device.AllocateDescriptorSet(pool, layout);
 
         aiMaterial* mat = scene->mMaterials[i];
 
@@ -132,7 +132,7 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
             material->TexDiffuse = VulkanApp::GetInstance()->GetDummyTexture();
 
         VkDescriptorImageInfo imgInfo = material->TexDiffuse->GetDescriptorImageInfo();
-        DescriptorSet::UpdateSamplerDescriptorSet(m_device, material->descSet, 0, imgInfo);
+        m_device.UpdateSamplerDescriptorSet(material->descSet, 0, imgInfo);
 
         for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
             mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);

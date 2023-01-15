@@ -1,7 +1,6 @@
 #include <array>
 
 #include "Device.h"
-#include "DescriptorSet.h"
 #include "Texture.h"
 
 #include "Mesh.h"

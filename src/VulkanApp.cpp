@@ -145,18 +145,18 @@ void VulkanApp::initVulkan() {
 
     createRenderPass();
     
-    m_descriptorPool = DescriptorSet::CreateDescriptorPool(*m_device);
+    m_descriptorPool = m_device->CreateDescriptorPool();
 
-    m_globalLayout = DescriptorSet::CreateLayout(*m_device, GetGlobalBindings());
+    m_globalLayout = m_device->CreateDescriptorSetLayout(GetGlobalBindings());
     m_device->CreateBuffer(
         sizeof(GlobalUBO) * MAX_FRAMES_IN_FLIGHT,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_globalBuffer,
         m_globalMemory);
-    m_globalSet = DescriptorSet::AllocateDescriptorSets(*m_device, m_descriptorPool, m_globalLayout, MAX_FRAMES_IN_FLIGHT);
-    DescriptorSet::UpdateUniformDescriptorSets(*m_device, m_globalSet, 0, m_globalBuffer, sizeof(GlobalUBO));
+    m_globalSet = m_device->AllocateDescriptorSets(m_descriptorPool, m_globalLayout, MAX_FRAMES_IN_FLIGHT);
+    m_device->UpdateUniformDescriptorSets(m_globalSet, 0, m_globalBuffer, sizeof(GlobalUBO));
     
-    m_materialLayout = DescriptorSet::CreateLayout(*m_device, GetMaterialBindings());
+    m_materialLayout = m_device->CreateDescriptorSetLayout(GetMaterialBindings());
 
     m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, "shaders/vert.spv", "shaders/frag.spv");
 
@@ -176,23 +176,24 @@ void VulkanApp::initVulkan() {
     m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
 }
 
-std::vector<DescriptorSet::Binding> VulkanApp::GetGlobalBindings() {
-    DescriptorSet::Binding binding1{};
-    binding1.Type = DescriptorSet::DescriptorType::Uniform;
-    binding1.Stage = Shader::StageSelection::Vertex;
-    DescriptorSet::Binding binding2{};
-    binding2.Type = DescriptorSet::DescriptorType::Sampler;
-    binding2.Stage = Shader::StageSelection::Fragment;
+std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetGlobalBindings() {
+    VkDescriptorSetLayoutBinding binding0{};
+    binding0.binding = 0;
+    binding0.descriptorCount = 1;
+    binding0.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    binding0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    return { binding1, binding2 };
+    return { binding0 };
 }
 
-std::vector<DescriptorSet::Binding> VulkanApp::GetMaterialBindings() {
-    DescriptorSet::Binding binding1{};
-    binding1.Type = DescriptorSet::DescriptorType::Sampler;
-    binding1.Stage = Shader::StageSelection::Fragment;
+std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetMaterialBindings() {
+    VkDescriptorSetLayoutBinding binding0{};
+    binding0.binding = 0;
+    binding0.descriptorCount = 1;
+    binding0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    binding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     
-    return { binding1 };
+    return { binding0 };
 }
 
 void VulkanApp::recreateSwapChain() {
@@ -561,7 +562,7 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
 
-    DescriptorSet::UpdateUniformBuffer(*m_device, m_globalMemory, currentImage * sizeof(GlobalUBO), sizeof(GlobalUBO), &global);
+    m_device->UpdateUniformBuffer(m_globalMemory, currentImage * sizeof(GlobalUBO), sizeof(GlobalUBO), &global);
 }
 
 void VulkanApp::Update(float deltaTime) {

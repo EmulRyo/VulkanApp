@@ -155,11 +155,19 @@ public:
 		const VkDescriptorPoolCreateInfo* pCreateInfo,
 		VkDescriptorPool* pDescriptorPool);
 
+	VkDescriptorPool CreateDescriptorPool();
+
+	VkDescriptorSet AllocateDescriptorSet(VkDescriptorPool pool, VkDescriptorSetLayout layout);
+
+	std::vector<VkDescriptorSet> AllocateDescriptorSets(VkDescriptorPool pool, VkDescriptorSetLayout layout, uint32_t count);
+
 	void DestroyDescriptorPool(VkDescriptorPool descriptorPool) { vkDestroyDescriptorPool(m_device, descriptorPool, nullptr); }
 
 	VkResult CreateDescriptorSetLayout(
 		const VkDescriptorSetLayoutCreateInfo* pCreateInfo,
 		VkDescriptorSetLayout* pSetLayout);
+
+	VkDescriptorSetLayout CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> bindings);
 
 	void DestroyDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout) { vkDestroyDescriptorSetLayout(m_device, descriptorSetLayout, nullptr); }
 
@@ -175,6 +183,10 @@ public:
 	void UpdateDescriptorSets(
 		uint32_t descriptorWriteCount,
 		const VkWriteDescriptorSet* pDescriptorWrites);
+
+	void UpdateUniformDescriptorSets(std::vector<VkDescriptorSet>& descSets, uint32_t bindingID, VkBuffer& buffer, VkDeviceSize size);
+	void UpdateSamplerDescriptorSet(VkDescriptorSet descSet, uint32_t bindingID, VkDescriptorImageInfo& imageInfo);
+	void UpdateUniformBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, void* data);
 
 	VkResult WaitIdle() { return vkDeviceWaitIdle(m_device); }
 

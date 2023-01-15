@@ -5,7 +5,6 @@
 
 #include "Device.h"
 #include "Texture.h"
-#include "DescriptorSet.h"
 
 Texture::Texture(Device& device)
     : m_device(device)
