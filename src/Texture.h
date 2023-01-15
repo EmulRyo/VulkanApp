@@ -32,6 +32,7 @@ private:
 
 	void CreateImage();
 	void CreateImage(const std::string& filename);
+	void CreateImage(VkDeviceSize imageSize, unsigned char* pixels);
 	void GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 	void CreateImageView();
 	void CreateSampler();
