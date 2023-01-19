@@ -35,10 +35,14 @@
 static VulkanApp* s_instance;
 
 struct GlobalUBO {
-    alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::mat4 viewproj;
+};
+
+struct PushConstants {
+    glm::mat4 model;
+    glm::vec4 data;
 };
 
 VulkanApp::VulkanApp() :
@@ -56,7 +60,7 @@ VulkanApp::VulkanApp() :
 
     m_lastTime = std::chrono::high_resolution_clock::now();
     VkExtent2D extent = m_swapchain->GetExtent();
-    m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.1f, 100.0f);
+    m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.01f, 100.0f);
 }
 
 VulkanApp::~VulkanApp() {
@@ -168,10 +172,18 @@ void VulkanApp::initVulkan() {
     createCommandBuffers();
     createSyncObjects();
 
-    //m_gameObject.Transform.Scale = {0.01f, 0.01f, 0.01f };
     m_dummyTexture = new Texture(*m_device);
-    m_gameObject.AddComponent<Model>(*m_device, MODEL_PATH);
-    m_axes = new Axes(*m_device, 100.0f, 0.02f);
+
+    m_gameObjects.emplace_back("GameObject");
+    Model* model = m_gameObjects.back().AddComponent<Model>(*m_device, MODEL_PATH);
+    glm::vec3 bboxMin = model->GetBBoxMin();
+    glm::vec3 bboxMax = model->GetBBoxMax();
+    glm::vec3 size = { bboxMax.x - bboxMin.x, bboxMax.y - bboxMin.y, bboxMax.z - bboxMin.z };
+    float maxSide = std::max(size.x, std::max(size.y, size.z));
+    model->Transform.Scale = glm::vec3(1.0 / maxSide);
+    model->Transform.Translation.y = (bboxMin.y / maxSide);
+
+    m_axes = new Axes(*m_device, 100.0f, 0.002f);
 
     m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
 }
@@ -390,12 +402,18 @@ void VulkanApp::createGraphicsPipeline() {
         m_materialLayout
     };
 
+    //setup push constants
+    VkPushConstantRange pushConstant;
+    pushConstant.offset = 0; //this push constant range starts at the beginning
+    pushConstant.size = sizeof(PushConstants); //this push constant range takes up the size of a MeshPushConstants struct
+    pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; //this push constant range is accessible only in the vertex shader
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = layouts.size();
     pipelineLayoutInfo.pSetLayouts = layouts.data();
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstant; // Optional
 
     if (m_device->CreatePipelineLayout(&pipelineLayoutInfo, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -499,9 +517,18 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+    PushConstants constants;
+
     //m_floor->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+    constants.model = glm::mat4(1.0f);
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
     m_axes->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
-    m_gameObject.GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+
+    for (int i = 0; i < m_gameObjects.size(); i++) {
+        constants.model = m_gameObjects[i].GetComponent<Transform>()->GetMatrix() * m_gameObjects[i].GetComponent<Model>()->Transform.GetMatrix();
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
+        m_gameObjects[i].GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+    }
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -557,7 +584,6 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     GlobalUBO global{};
-    global.model = m_gameObject.GetComponent<Transform>()->GetMatrix() * m_gameObject.GetComponent<Model>()->Transform.GetMatrix();
     global.view = m_cam.GetView();
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
@@ -640,7 +666,8 @@ void VulkanApp::cleanup() {
 
     cleanupSwapChain();
 
-    m_gameObject.Dispose();
+    for (int i=0; i<m_gameObjects.size(); i++)
+        m_gameObjects[i].Dispose();
 
     delete m_dummyTexture;
 

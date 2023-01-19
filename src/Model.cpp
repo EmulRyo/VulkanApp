@@ -20,6 +20,8 @@ public: void write(const char* message) { spdlog::error("{}", message); }
 Model::Model(Device& device, std::vector<Material*> materials, std::vector<Mesh*> meshes)
     : m_device(device), m_materials(materials), m_meshes(meshes)
 {
+    m_bboxMin.x = m_bboxMin.y = m_bboxMin.z = std::numeric_limits<float>::max();
+    m_bboxMax.x = m_bboxMax.y = m_bboxMax.z = std::numeric_limits<float>::min();
     for (int i = 0; i < m_meshes.size(); i++) {
         m_numIndices += m_meshes[i]->GetNumIndices();
         m_numVertices += m_meshes[i]->GetNumVertices();
@@ -260,6 +262,13 @@ Mesh *Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
     glm::vec3 bboxMin = { mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z };
     glm::vec3 bboxMax = { mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z };
+
+    m_bboxMin.x = std::min(m_bboxMin.x, bboxMin.x);
+    m_bboxMin.y = std::min(m_bboxMin.y, bboxMin.y);
+    m_bboxMin.z = std::min(m_bboxMin.z, bboxMin.z);
+    m_bboxMax.x = std::max(m_bboxMax.x, bboxMax.x);
+    m_bboxMax.y = std::max(m_bboxMax.y, bboxMax.y);
+    m_bboxMax.z = std::max(m_bboxMax.z, bboxMax.z);
 
     return new Mesh(m_device, vertices, indices, material, bboxMin, bboxMax);
 }

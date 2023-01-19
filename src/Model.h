@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <limits>
 
 #include "Components.h"
 #include "Transform.h"
@@ -27,6 +28,10 @@ public:
     static ComponentType GetTypeStatic() { return ComponentType::Model; }
     ComponentType GetType() { return GetTypeStatic(); }
 
+    glm::vec3 GetBBoxMin() { return m_bboxMin; }
+    glm::vec3 GetBBoxMax() { return m_bboxMax; }
+    glm::vec3 GetSize() { return { m_bboxMax.x - m_bboxMin.x, m_bboxMax.y - m_bboxMin.y, m_bboxMax.z - m_bboxMin.z }; }
+
     Transform Transform;
 protected:
     Device& m_device;
@@ -37,6 +42,7 @@ protected:
     std::string m_directory;
     size_t m_numVertices = 0;
     size_t m_numIndices = 0;
+    glm::vec3 m_bboxMin, m_bboxMax;
 
 private:
     void Load(const std::string &path);
