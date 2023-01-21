@@ -71,7 +71,7 @@ private:
     bool m_framebufferResized = false;
     uint32_t currentFrame = 0;
 
-    std::vector<GameObject> m_gameObjects;
+    std::vector<GameObject *> m_gameObjects;
     Texture* m_dummyTexture;
 
     RenderImage* m_color;
@@ -81,7 +81,6 @@ private:
     Camera m_cam;
     CameraController m_camController;
     ChronoTime m_lastTime;
-    Axes *m_axes;
     Prism *m_floor;
 
     void FramebufferResizeCallback(int width, int height);
@@ -111,6 +110,8 @@ private:
 
     VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     VkFormat FindDepthFormat();
+
+    GameObject* NewGameObject(const std::string name, std::string modelPath);
 
     void Update(float deltaTime);
     void Draw(float deltaTime);

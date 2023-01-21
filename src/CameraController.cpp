@@ -9,7 +9,7 @@ CameraController::CameraController(Window& window, Camera& cam):
     m_buttonPressed(false),
     m_lastMousePosition(0.0f)
 {
-    m_cam.LookAt({ 1.0f, 1.0f, 1.0f });
+    m_cam.LookAt({ 1.0f, 1.0f, 1.0f }, { 0.0f, 0.5f, 0.0f });
 }
 
 void CameraController::Update(float deltaTime) {

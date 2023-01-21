@@ -174,18 +174,27 @@ void VulkanApp::initVulkan() {
 
     m_dummyTexture = new Texture(*m_device);
 
-    m_gameObjects.emplace_back("GameObject");
-    Model* model = m_gameObjects.back().AddComponent<Model>(*m_device, MODEL_PATH);
+    GameObject* axes = new GameObject("Axes");
+    axes->AddComponent<Axes>(*m_device, 100.0f, 0.002f);
+    m_gameObjects.push_back(axes);
+
+    GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
+    m_gameObjects.push_back(gameObject1);
+
+    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
+}
+
+GameObject* VulkanApp::NewGameObject(const std::string name, std::string modelPath) {
+    GameObject* gameObject = new GameObject(name);
+    Model* model = gameObject->AddComponent<Model>(*m_device, modelPath);
     glm::vec3 bboxMin = model->GetBBoxMin();
     glm::vec3 bboxMax = model->GetBBoxMax();
     glm::vec3 size = { bboxMax.x - bboxMin.x, bboxMax.y - bboxMin.y, bboxMax.z - bboxMin.z };
     float maxSide = std::max(size.x, std::max(size.y, size.z));
-    model->Transform.Scale = glm::vec3(1.0 / maxSide);
+    model->Transform.Scale = glm::vec3(1.0f / maxSide);
     model->Transform.Translation.y = (bboxMin.y / maxSide);
 
-    m_axes = new Axes(*m_device, 100.0f, 0.002f);
-
-    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
+    return gameObject;
 }
 
 std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetGlobalBindings() {
@@ -410,7 +419,7 @@ void VulkanApp::createGraphicsPipeline() {
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = layouts.size();
+    pipelineLayoutInfo.setLayoutCount = (uint32_t)layouts.size();
     pipelineLayoutInfo.pSetLayouts = layouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstant; // Optional
@@ -520,14 +529,14 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
     PushConstants constants;
 
     //m_floor->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
-    constants.model = glm::mat4(1.0f);
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
-    m_axes->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+    //constants.model = glm::mat4(1.0f);
+    //vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
+    //m_axes->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
 
     for (int i = 0; i < m_gameObjects.size(); i++) {
-        constants.model = m_gameObjects[i].GetComponent<Transform>()->GetMatrix() * m_gameObjects[i].GetComponent<Model>()->Transform.GetMatrix();
+        constants.model = m_gameObjects[i]->GetComponent<Transform>()->GetMatrix() * m_gameObjects[i]->GetComponent<Model>()->Transform.GetMatrix();
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
-        m_gameObjects[i].GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
+        m_gameObjects[i]->GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -667,7 +676,7 @@ void VulkanApp::cleanup() {
     cleanupSwapChain();
 
     for (int i=0; i<m_gameObjects.size(); i++)
-        m_gameObjects[i].Dispose();
+        m_gameObjects[i]->Dispose();
 
     delete m_dummyTexture;
 
@@ -678,7 +687,6 @@ void VulkanApp::cleanup() {
     m_device->DestroyDescriptorPool(m_descriptorPool);
 
     delete m_shader;
-    delete m_axes;
     delete m_floor;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
