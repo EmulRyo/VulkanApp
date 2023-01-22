@@ -29,6 +29,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Axes.h"
+#include "Grid.h"
 #include "Prism.h"
 #include "VulkanApp.h"
 
@@ -61,6 +62,25 @@ VulkanApp::VulkanApp() :
     m_lastTime = std::chrono::high_resolution_clock::now();
     VkExtent2D extent = m_swapchain->GetExtent();
     m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.01f, 100.0f);
+
+
+    m_dummyTexture = new Texture(*m_device);
+
+    GameObject* grid1 = new GameObject("Grid1");
+    grid1->AddComponent<Grid>(*m_device, 10, 1.0f, 0.002f);
+    m_gameObjects.push_back(grid1);
+
+    GameObject* grid2 = new GameObject("Grid2");
+    glm::vec3 color = { 0.2f, 0.2f, 0.2f };
+    grid2->AddComponent<Grid>(*m_device, 20, 0.1f, 0.0018f, color);
+    m_gameObjects.push_back(grid2);
+
+    GameObject* axes = new GameObject("Axes");
+    axes->AddComponent<Axes>(*m_device, 100.0f, 0.004f);
+    m_gameObjects.push_back(axes);
+
+    GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
+    m_gameObjects.push_back(gameObject1);
 }
 
 VulkanApp::~VulkanApp() {
@@ -171,17 +191,6 @@ void VulkanApp::initVulkan() {
 
     createCommandBuffers();
     createSyncObjects();
-
-    m_dummyTexture = new Texture(*m_device);
-
-    GameObject* axes = new GameObject("Axes");
-    axes->AddComponent<Axes>(*m_device, 100.0f, 0.002f);
-    m_gameObjects.push_back(axes);
-
-    GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
-    m_gameObjects.push_back(gameObject1);
-
-    m_floor = new Prism(*m_device, -1000.0f, +1000.0f, -0.01f, 0.0f, -1000.0f, +1000.0f, { 0.1f, 0.1f, 0.1f });
 }
 
 GameObject* VulkanApp::NewGameObject(const std::string name, std::string modelPath) {
@@ -510,7 +519,7 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
     }
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+    clearValues[0].color = { {0.01f, 0.01f, 0.01f, 1.0f} };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     VkRenderPassBeginInfo renderPassInfo{};
@@ -527,11 +536,6 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
     PushConstants constants;
-
-    //m_floor->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
-    //constants.model = glm::mat4(1.0f);
-    //vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
-    //m_axes->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
 
     for (int i = 0; i < m_gameObjects.size(); i++) {
         constants.model = m_gameObjects[i]->GetComponent<Transform>()->GetMatrix() * m_gameObjects[i]->GetComponent<Model>()->Transform.GetMatrix();
@@ -687,7 +691,6 @@ void VulkanApp::cleanup() {
     m_device->DestroyDescriptorPool(m_descriptorPool);
 
     delete m_shader;
-    delete m_floor;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_device->DestroySemaphore(renderFinishedSemaphores[i]);

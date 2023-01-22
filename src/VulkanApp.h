@@ -81,7 +81,6 @@ private:
     Camera m_cam;
     CameraController m_camController;
     ChronoTime m_lastTime;
-    Prism *m_floor;
 
     void FramebufferResizeCallback(int width, int height);
 

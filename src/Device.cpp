@@ -675,8 +675,8 @@ VkResult Device::CreateDescriptorPool(
 
 VkDescriptorPool Device::CreateDescriptorPool() {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10}
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 }
     };
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -684,7 +684,7 @@ VkDescriptorPool Device::CreateDescriptorPool() {
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 20;
+    poolInfo.maxSets = 200;
 
     VkDescriptorPool descriptorPool;
     if (CreateDescriptorPool(&poolInfo, &descriptorPool) != VK_SUCCESS) {
