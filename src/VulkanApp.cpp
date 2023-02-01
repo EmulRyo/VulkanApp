@@ -220,10 +220,15 @@ std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetMaterialBindings() {
     VkDescriptorSetLayoutBinding binding0{};
     binding0.binding = 0;
     binding0.descriptorCount = 1;
-    binding0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    binding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    binding0.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    binding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding binding1{};
+    binding1.binding = 1;
+    binding1.descriptorCount = 1;
+    binding1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    binding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     
-    return { binding0 };
+    return { binding0, binding1 };
 }
 
 void VulkanApp::recreateSwapChain() {

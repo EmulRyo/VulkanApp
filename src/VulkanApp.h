@@ -39,10 +39,10 @@ private:
     const uint32_t HEIGHT = 600;
     //const std::string MODEL_PATH = "models/shiba/1.fbx";
     //const std::string MODEL_PATH = "models/swamp-location/map_1.obj";
-    const std::string MODEL_PATH = "models/backpack/backpack.obj";
+    //const std::string MODEL_PATH = "models/backpack/backpack.obj";
     //const std::string MODEL_PATH = "models/pony-cartoon/Pony_cartoon.obj";
     //const std::string MODEL_PATH = "models/che/scene.gltf";
-    const std::string TEXTURE_PATH = "textures/viking_room.png";
+    const std::string MODEL_PATH = "models/bmw.obj";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

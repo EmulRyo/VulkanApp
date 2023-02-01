@@ -14,7 +14,7 @@ struct aiMaterial;
 enum aiTextureType;
 class Device;
 class Mesh;
-struct Material;
+class Material;
 
 class Model: public Component
 {
@@ -42,7 +42,8 @@ protected:
     std::string m_directory;
     size_t m_numVertices = 0;
     size_t m_numIndices = 0;
-    glm::vec3 m_bboxMin, m_bboxMax;
+    glm::vec3 m_bboxMin = glm::vec3(0);
+    glm::vec3 m_bboxMax = glm::vec3(0);
 
 private:
     void Load(const std::string &path);

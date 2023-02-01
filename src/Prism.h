@@ -8,7 +8,6 @@
 
 class Device;
 class Mesh;
-struct Material;
 
 class Prism: public Model
 {

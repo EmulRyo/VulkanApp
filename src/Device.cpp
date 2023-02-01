@@ -769,6 +769,23 @@ void Device::UpdateDescriptorSets(
     vkUpdateDescriptorSets(m_device, descriptorWriteCount, pDescriptorWrites, 0, nullptr);
 }
 
+void Device::UpdateUniformDescriptorSet(VkDescriptorSet descSet, uint32_t bindingID, VkBuffer buffer, VkDeviceSize size) {
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = size;
+
+    VkWriteDescriptorSet descWrite{};
+    descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descWrite.dstSet = descSet;
+    descWrite.dstBinding = bindingID;
+    descWrite.descriptorCount = 1;
+    descWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descWrite.pBufferInfo = &bufferInfo;
+
+    UpdateDescriptorSets(1, &descWrite);
+}
+
 void Device::UpdateUniformDescriptorSets(std::vector<VkDescriptorSet>& descSets, uint32_t bindingID, VkBuffer& buffer, VkDeviceSize size) {
     std::vector<VkWriteDescriptorSet> descWrites(descSets.size());
     for (int i = 0; i < descSets.size(); i++) {

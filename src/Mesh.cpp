@@ -2,6 +2,7 @@
 
 #include "Device.h"
 #include "Texture.h"
+#include "Material.h"
 
 #include "Mesh.h"
 
@@ -84,8 +85,8 @@ void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, 
 
     std::vector<VkDescriptorSet> combinedDescSets;
     combinedDescSets.push_back(globalSet);
-    if ((m_material != nullptr) && (m_material->TexDiffuse != nullptr))
-        combinedDescSets.push_back(m_material->descSet);
+    if (m_material != nullptr)
+        combinedDescSets.push_back(m_material->GetDescriptorSet());
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, combinedDescSets.size(), combinedDescSets.data(), 0, nullptr);
 

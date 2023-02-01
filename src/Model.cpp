@@ -10,6 +10,7 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "Device.h"
+#include "Material.h"
 #include "VulkanApp.h"
 #include "Model.h"
 
@@ -99,15 +100,13 @@ void Model::Load(const std::string& path) {
 
 void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
-        Material* material = new Material();
-
-        material->descSet = m_device.AllocateDescriptorSet(pool, layout);
+        Material* material = new Material(m_device);
 
         aiMaterial* mat = scene->mMaterials[i];
 
         aiString name;
         mat->Get(AI_MATKEY_NAME, name);
-        material->Name = name.C_Str();
+        material->SetName(name.C_Str());
 
         int shadingModel = 0;
         mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
@@ -115,31 +114,26 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
         aiColor3D vec3;
 
         mat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
-        material->Diffuse = Material::ToGlm(vec3);
+        material->SetDiffuseColor(Material::ToGlm(vec3));
         mat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
-        material->Ambient = Material::ToGlm(vec3);
+        material->SetAmbientColor(Material::ToGlm(vec3));
         mat->Get(AI_MATKEY_COLOR_SPECULAR, vec3);
-        material->Specular = Material::ToGlm(vec3);
+        material->SetSpecularColor(Material::ToGlm(vec3));
         mat->Get(AI_MATKEY_COLOR_EMISSIVE, vec3);
-        material->Emissive = Material::ToGlm(vec3);
+        material->SetEmissiveColor(Material::ToGlm(vec3));
 
         aiString texPath;
         for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
             mat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
             Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
-            material->TexDiffuse = tex;
+            material->SetDiffuseTexture(tex);
             m_textures.push_back(tex);
         }
-        if (material->TexDiffuse == nullptr)
-            material->TexDiffuse = VulkanApp::GetInstance()->GetDummyTexture();
-
-        VkDescriptorImageInfo imgInfo = material->TexDiffuse->GetDescriptorImageInfo();
-        m_device.UpdateSamplerDescriptorSet(material->descSet, 0, imgInfo);
 
         for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
             mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
             Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
-            material->TexSpecular = tex;
+            //material->SpecularTex = tex;
             m_textures.push_back(tex);
         }
 
@@ -147,25 +141,18 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
             "Error", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
         };
 
-        spdlog::debug("Material {}: name={}, shadingModel={}", i, material->Name, shadingModeNames[shadingModel]);
-        PrintColor("\tdiffuse ", material->Diffuse);
-        PrintColor("\tambient ", material->Ambient);
-        PrintColor("\tspecular", material->Specular);
-        PrintColor("\temissive", material->Emissive);
-        PrintTexture("\ttex.diffuse ", material->TexDiffuse);
-        PrintTexture("\ttex.specular", material->TexSpecular);
+        spdlog::debug("Material {}: name={}, shadingModel={}", i, material->GetName(), shadingModeNames[shadingModel]);
+        Material::PrintColor("\tdiffuse ", material->GetDiffuseColor());
+        Material::PrintColor("\tambient ", material->GetAmbientColor());
+        Material::PrintColor("\tspecular", material->GetSpecularColor());
+        Material::PrintColor("\temissive", material->GetEmissiveColor());
+        Material::PrintTexture("\ttex.diffuse ", material->GetDiffuseTexture());
+        Material::PrintTexture("\ttex.specular", material->GetSpecularTexture());
+
+        material->UpdateUniform();
 
         m_materials.push_back(material);
     }
-}
-
-void Model::PrintColor(const std::string& prefix, const glm::vec3 &color) {
-    spdlog::debug("{} = ({:.3f}, {:.3f}, {:.3f})", prefix, color.r, color.g, color.b);
-}
-
-void Model::PrintTexture(const std::string &prefix, const Texture* tex) {
-    if (tex)
-        spdlog::debug("{} = {}, ({}x{}x{})", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene)
@@ -191,7 +178,7 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
         m_numIndices += mesh->GetNumIndices();
         spdlog::debug(
             "Mesh {}: vertices: {}, indices: {}({} triangles), material: \"{}\"",
-            m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3, mesh->GetMaterial()->Name);
+            m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3, mesh->GetMaterial()->GetName());
         m_meshes.push_back(mesh);
     }
     // then do the same for each of its children

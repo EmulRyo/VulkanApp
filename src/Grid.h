@@ -9,7 +9,6 @@
 
 class Device;
 class Mesh;
-struct Material;
 
 class Grid: public Model
 {

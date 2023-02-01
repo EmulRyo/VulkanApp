@@ -2,6 +2,7 @@
 
 #include "VulkanApp.h"
 #include "Texture.h"
+#include "Material.h"
 #include "Device.h"
 #include "Axes.h"
 
@@ -30,14 +31,9 @@ void Axes::Load(float length, float thickness) {
 }
 
 Mesh* Axes::CreateMesh(std::vector<uint32_t> &indices, float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, glm::vec3 color) {
-    VkDescriptorPool pool = VulkanApp::GetInstance()->GetDescriptorPool();
-    VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
-    Material* material = new Material();
-    material->descSet = m_device.AllocateDescriptorSet(pool, layout);
-    material->TexDiffuse = VulkanApp::GetInstance()->GetDummyTexture();
-
-    VkDescriptorImageInfo imgInfo = material->TexDiffuse->GetDescriptorImageInfo();
-    m_device.UpdateSamplerDescriptorSet(material->descSet, 0, imgInfo);
+    Material* material = new Material(m_device);
+    material->UpdateUniform();
+    m_materials.push_back(material);
 
     std::vector<Vertex> vertices{
         {{xMin, yMin, zMin}, {0.0f, 0.0f, 0.0f}, color, {0.0f, 0.0f}},

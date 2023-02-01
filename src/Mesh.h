@@ -9,6 +9,7 @@
 
 class Device;
 class Texture;
+class Material;
 
 struct Vertex {
     glm::vec3 pos;
@@ -18,20 +19,6 @@ struct Vertex {
 
     static VkVertexInputBindingDescription getBindingDescription();
     static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
-};
-
-struct Material {
-    std::string Name;
-    glm::vec3 Diffuse;
-    glm::vec3 Specular;
-    glm::vec3 Ambient;
-    glm::vec3 Emissive;
-    Texture* TexDiffuse;
-    Texture* TexSpecular;
-
-    VkDescriptorSet descSet;
-
-    static glm::vec3 ToGlm(const aiColor3D &color3D) { return glm::vec3(color3D.r, color3D.g, color3D.b); };
 };
 
 class Mesh
