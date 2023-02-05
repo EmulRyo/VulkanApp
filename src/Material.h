@@ -21,12 +21,14 @@ public:
     const glm::vec3& GetSpecularColor() const { return m_specularColor; }
     const glm::vec3& GetAmbientColor() const { return m_ambientColor; }
     const glm::vec3& GetEmissiveColor() const { return m_emissiveColor; }
+    const float GetShininess() const { return m_shininess; }
 
     void SetName(const std::string& name) { m_name = name; }
     void SetDiffuseColor(const glm::vec3& color) { m_diffuseColor = color; }
     void SetSpecularColor(const glm::vec3& color) { m_specularColor = color; }
     void SetAmbientColor(const glm::vec3& color) { m_ambientColor = color; }
     void SetEmissiveColor(const glm::vec3& color) { m_emissiveColor = color; }
+    void SetShininess(float shininess) { m_shininess = shininess; }
 
     void UpdateUniform();
 
@@ -54,12 +56,14 @@ private:
     glm::vec3 m_specularColor;
     glm::vec3 m_ambientColor;
     glm::vec3 m_emissiveColor;
+    float m_shininess;
     Texture* m_diffuseTex;
     Texture* m_specularTex;
 
     struct MaterialUBO {
         alignas(16) glm::vec3 diffuse;
         alignas(16) glm::vec3 specular;
+        alignas(4)  float shininess;
         alignas(16) glm::vec3 ambient;
     };
 

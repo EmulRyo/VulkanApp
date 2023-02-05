@@ -39,11 +39,12 @@ struct GlobalUBO {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::mat4 viewproj;
+    alignas(16) glm::vec3 viewPos;
 };
 
 struct PushConstants {
     glm::mat4 model;
-    glm::vec4 data;
+    glm::mat3x4 normal; // normalMatrix (3x3). Para evitar problemas de alineacion se usa una de 3x4
 };
 
 VulkanApp::VulkanApp() :
@@ -76,7 +77,7 @@ VulkanApp::VulkanApp() :
     m_gameObjects.push_back(grid2);
 
     GameObject* axes = new GameObject("Axes");
-    axes->AddComponent<Axes>(*m_device, 100.0f, 0.004f);
+    axes->AddComponent<Axes>(*m_device, 100.0f, 0.0021f);
     m_gameObjects.push_back(axes);
 
     GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
@@ -172,8 +173,9 @@ void VulkanApp::initVulkan() {
     m_descriptorPool = m_device->CreateDescriptorPool();
 
     m_globalLayout = m_device->CreateDescriptorSetLayout(GetGlobalBindings());
+    size_t sizeUniform = m_device->PadUniformBufferSize(sizeof(GlobalUBO));
     m_device->CreateBuffer(
-        sizeof(GlobalUBO) * MAX_FRAMES_IN_FLIGHT,
+        sizeUniform * MAX_FRAMES_IN_FLIGHT,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         m_globalBuffer,
         m_globalMemory);
@@ -211,7 +213,7 @@ std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetGlobalBindings() {
     binding0.binding = 0;
     binding0.descriptorCount = 1;
     binding0.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    binding0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    binding0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     return { binding0 };
 }
@@ -221,7 +223,7 @@ std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetMaterialBindings() {
     binding0.binding = 0;
     binding0.descriptorCount = 1;
     binding0.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    binding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    binding0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutBinding binding1{};
     binding1.binding = 1;
     binding1.descriptorCount = 1;
@@ -544,6 +546,7 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     for (int i = 0; i < m_gameObjects.size(); i++) {
         constants.model = m_gameObjects[i]->GetComponent<Transform>()->GetMatrix() * m_gameObjects[i]->GetComponent<Model>()->Transform.GetMatrix();
+        constants.normal = glm::mat3x4(glm::transpose(glm::inverse(constants.model)));
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
         m_gameObjects[i]->GetComponent<Model>()->Draw(commandBuffer, pipelineLayout, m_globalSet[currentFrame]);
     }
@@ -605,8 +608,11 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     global.view = m_cam.GetView();
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
+    global.viewPos = glm::vec3(glm::inverse(m_cam.GetView())[3]);
 
-    m_device->UpdateUniformBuffer(m_globalMemory, currentImage * sizeof(GlobalUBO), sizeof(GlobalUBO), &global);
+    VkDeviceSize offset = currentImage * m_device->PadUniformBufferSize(sizeof(GlobalUBO));
+
+    m_device->UpdateUniformBuffer(m_globalMemory, offset, sizeof(GlobalUBO), &global);
 }
 
 void VulkanApp::Update(float deltaTime) {

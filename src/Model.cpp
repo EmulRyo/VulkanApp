@@ -111,6 +111,10 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
         int shadingModel = 0;
         mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
 
+        float shininess = 0;
+        mat->Get(AI_MATKEY_SHININESS, shininess);
+        material->SetShininess(shininess);
+
         aiColor3D vec3;
 
         mat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
@@ -142,10 +146,11 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
         };
 
         spdlog::debug("Material {}: name={}, shadingModel={}", i, material->GetName(), shadingModeNames[shadingModel]);
-        Material::PrintColor("\tdiffuse ", material->GetDiffuseColor());
-        Material::PrintColor("\tambient ", material->GetAmbientColor());
-        Material::PrintColor("\tspecular", material->GetSpecularColor());
-        Material::PrintColor("\temissive", material->GetEmissiveColor());
+        Material::PrintColor("\tdiffuse  ", material->GetDiffuseColor());
+        Material::PrintColor("\tambient  ", material->GetAmbientColor());
+        Material::PrintColor("\tspecular ", material->GetSpecularColor());
+        Material::PrintColor("\temissive ", material->GetEmissiveColor());
+        spdlog::debug(       "\tshininess = {}", material->GetShininess());
         Material::PrintTexture("\ttex.diffuse ", material->GetDiffuseTexture());
         Material::PrintTexture("\ttex.specular", material->GetSpecularTexture());
 

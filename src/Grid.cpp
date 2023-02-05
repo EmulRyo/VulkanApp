@@ -41,6 +41,7 @@ void Grid::Load(int slices, float spacing, float thickness, glm::vec3 color) {
 
 Mesh* Grid::CreateMesh(std::vector<uint32_t> &indices, float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, glm::vec3 color) {
     Material* material = new Material(m_device);
+    material->SetAmbientColor({ 1.0f, 1.0f, 1.0f });
     material->UpdateUniform();
     m_materials.push_back(material);
 

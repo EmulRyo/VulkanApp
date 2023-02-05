@@ -8,8 +8,9 @@ Material::Material(Device& device) :
 	m_name("No name"),
 	m_diffuseColor(glm::vec3(1)),
 	m_specularColor(glm::vec3(0)),
-	m_ambientColor(glm::vec3(0)),
+	m_ambientColor(glm::vec3(0.1)),
 	m_emissiveColor(glm::vec3(0)),
+	m_shininess(32.0f),
 	m_diffuseTex(nullptr),
 	m_specularTex(nullptr),
 	m_materialDescSet(VK_NULL_HANDLE)
@@ -50,6 +51,7 @@ void Material::UpdateUniform() {
 	ubo.diffuse = m_diffuseColor;
 	ubo.specular = m_specularColor;
 	ubo.ambient = m_ambientColor;
+	ubo.shininess = m_shininess;
 
 	m_device.UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
 }
