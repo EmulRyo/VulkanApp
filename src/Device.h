@@ -188,6 +188,7 @@ public:
 	void UpdateUniformDescriptorSets(std::vector<VkDescriptorSet>& descSets, uint32_t bindingID, VkBuffer& buffer, VkDeviceSize size);
 	void UpdateSamplerDescriptorSet(VkDescriptorSet descSet, uint32_t bindingID, VkDescriptorImageInfo& imageInfo);
 	void UpdateUniformBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, void* data);
+	size_t PadUniformBufferSize(size_t originalSize);
 
 	VkResult WaitIdle() { return vkDeviceWaitIdle(m_device); }
 

@@ -791,7 +791,7 @@ void Device::UpdateUniformDescriptorSets(std::vector<VkDescriptorSet>& descSets,
     for (int i = 0; i < descSets.size(); i++) {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = buffer;
-        bufferInfo.offset = size * i;
+        bufferInfo.offset = PadUniformBufferSize(size) * i;
         bufferInfo.range = size;
 
         descWrites[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -821,4 +821,17 @@ void Device::UpdateUniformBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkD
     MapMemory(memory, offset, size, 0, &dst);
     memcpy(dst, data, size);
     UnmapMemory(memory);
+}
+
+size_t Device::PadUniformBufferSize(size_t originalSize)
+{
+    VkPhysicalDeviceProperties properties;
+    GetProperties(&properties);
+    // Calculate required alignment based on minimum device offset alignment
+    size_t minUboAlignment = properties.limits.minUniformBufferOffsetAlignment;
+    size_t alignedSize = originalSize;
+    if (minUboAlignment > 0) {
+        alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+    }
+    return alignedSize;
 }
