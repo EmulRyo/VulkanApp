@@ -35,6 +35,7 @@ public:
     const Texture* GetDiffuseTexture() const { return m_diffuseTex; }
     const Texture* GetSpecularTexture() const { return m_specularTex; }
     void SetDiffuseTexture(Texture* texture);
+    void SetSpecularTexture(Texture* texture);
 
     VkDescriptorSet GetDescriptorSet() const { return m_materialDescSet; }
 
@@ -45,7 +46,7 @@ public:
     }
 
     static void PrintTexture(const std::string& prefix, const Texture* tex) {
-        if (tex)
+        if (tex && !tex->GetFilename().empty())
             spdlog::debug("{} = {}, ({}x{}x{})", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
     }
 

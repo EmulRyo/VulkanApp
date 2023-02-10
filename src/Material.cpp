@@ -6,10 +6,10 @@
 Material::Material(Device& device) :
 	m_device(device),
 	m_name("No name"),
-	m_diffuseColor(glm::vec3(1)),
-	m_specularColor(glm::vec3(0)),
-	m_ambientColor(glm::vec3(0.1)),
-	m_emissiveColor(glm::vec3(0)),
+	m_diffuseColor(glm::vec3(1.0f)),
+	m_specularColor(glm::vec3(0.0f)),
+	m_ambientColor(glm::vec3(0.1f)),
+	m_emissiveColor(glm::vec3(0.0f)),
 	m_shininess(32.0f),
 	m_diffuseTex(nullptr),
 	m_specularTex(nullptr),
@@ -38,12 +38,19 @@ void Material::Init() {
 	m_device.UpdateUniformDescriptorSet(m_materialDescSet, 0, m_materialBuffer, sizeof(MaterialUBO));
 
 	SetDiffuseTexture(VulkanApp::GetInstance()->GetDummyTexture());
+	SetSpecularTexture(VulkanApp::GetInstance()->GetDummyTexture());
 }
 
 void Material::SetDiffuseTexture(Texture* texture) {
 	m_diffuseTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
 	m_device.UpdateSamplerDescriptorSet(m_materialDescSet, 1, imgInfo);
+}
+
+void Material::SetSpecularTexture(Texture* texture) {
+	m_specularTex = texture;
+	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
+	m_device.UpdateSamplerDescriptorSet(m_materialDescSet, 2, imgInfo);
 }
 
 void Material::UpdateUniform() {

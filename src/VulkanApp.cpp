@@ -35,11 +35,19 @@
 
 static VulkanApp* s_instance;
 
+struct Light {
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 ambient;
+    alignas(16) glm::vec3 diffuse;
+    alignas(16) glm::vec3 specular;
+};
+
 struct GlobalUBO {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::mat4 viewproj;
     alignas(16) glm::vec3 viewPos;
+    Light light;
 };
 
 struct PushConstants {
@@ -229,8 +237,13 @@ std::vector<VkDescriptorSetLayoutBinding> VulkanApp::GetMaterialBindings() {
     binding1.descriptorCount = 1;
     binding1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     binding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding binding2{};
+    binding2.binding = 2;
+    binding2.descriptorCount = 1;
+    binding2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    binding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     
-    return { binding0, binding1 };
+    return { binding0, binding1, binding2 };
 }
 
 void VulkanApp::recreateSwapChain() {
@@ -609,6 +622,10 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
     global.viewPos = glm::vec3(glm::inverse(m_cam.GetView())[3]);
+    global.light.position = glm::vec3(cos(time*0.5f), 1, sin(time*0.5f)); 
+    global.light.ambient  = glm::vec3(1);
+    global.light.diffuse  = glm::vec3(1);
+    global.light.specular = glm::vec3(1);
 
     VkDeviceSize offset = currentImage * m_device->PadUniformBufferSize(sizeof(GlobalUBO));
 

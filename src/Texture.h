@@ -13,7 +13,7 @@ public:
 	~Texture();
 
 	VkDescriptorImageInfo GetDescriptorImageInfo();
-	std::string GetFilename() const { return m_filename; }
+	const std::string& GetFilename() const { return m_filename; }
 	int GetWidth() const { return m_width; }
 	int GetHeight() const { return m_height; }
 	int GetChannels() const { return m_channels; }

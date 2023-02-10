@@ -137,7 +137,7 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
         for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
             mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
             Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
-            //material->SpecularTex = tex;
+            material->SetSpecularTexture(tex);
             m_textures.push_back(tex);
         }
 

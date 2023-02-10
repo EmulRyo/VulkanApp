@@ -1,10 +1,18 @@
 #version 450
 
+struct Light {
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
 layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 proj;
     mat4 viewproj;
     vec3 viewPos;
+    Light light;
 } global;
 
 layout(set = 1, binding = 0) uniform MaterialUBO {
@@ -13,7 +21,8 @@ layout(set = 1, binding = 0) uniform MaterialUBO {
     float shininess;
     vec3 ambient;
 } material;
-layout(set = 1, binding = 1) uniform sampler2D texSampler;
+layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
+layout(set = 1, binding = 2) uniform sampler2D specularSampler;
 
 layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec3 fragNormal;
@@ -24,23 +33,18 @@ layout(location = 0) out vec4 outColor;
 
 
 void main() {
-    vec3 lightPos = normalize(vec3(1, 1, 1));
-    vec3 lightDir = normalize(lightPos - fragPosition);
+    vec3 lightDir = normalize(global.light.position - fragPosition);
     vec3 normal = normalize(fragNormal);
     
-    vec3 ambient = material.ambient;
+    vec3 ambient = global.light.ambient * vec3(texture(diffuseSampler, fragTexCoord)) * material.ambient;
     
     float diffuseIntensity = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diffuseIntensity * material.diffuse;
+    vec3 diffuse = global.light.diffuse * vec3(texture(diffuseSampler, fragTexCoord)) * diffuseIntensity * material.diffuse;
 
     vec3 viewDir = normalize(global.viewPos - fragPosition);
     vec3 reflectDir = reflect(-lightDir, normal);
     float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = specularIntensity * material.specular;  
+    vec3 specular = global.light.specular * vec3(texture(specularSampler, fragTexCoord)) * specularIntensity * material.specular;
 
     outColor = vec4(fragColor*(ambient + diffuse + specular), 1);
-
-    outColor = texture(texSampler, fragTexCoord)*outColor;
-
-    //outColor = vec4(specular, 1.0);
 }
