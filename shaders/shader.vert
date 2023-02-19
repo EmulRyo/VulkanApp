@@ -4,7 +4,8 @@ layout(set = 0, binding = 0) uniform GlobalUBO {
     mat4 view;
     mat4 proj;
     mat4 viewproj;
-    vec3 viewPos;
+    vec4 viewPos;
+    // ...
 } global;
 
 layout( push_constant ) uniform PushConstants {

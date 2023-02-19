@@ -33,21 +33,27 @@
 #include "Prism.h"
 #include "VulkanApp.h"
 
+#define MAX_LIGHTS 8
+
 static VulkanApp* s_instance;
 
 struct Light {
-    alignas(16) glm::vec3 position;
-    alignas(16) glm::vec3 ambient;
-    alignas(16) glm::vec3 diffuse;
-    alignas(16) glm::vec3 specular;
+    glm::vec4 position;
+    glm::vec4 direction;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+    glm::vec4 attenuation; // x:constant, y:linear, z:quadratic
+    glm::vec4 cutOff; // x:inner, y:outter
 };
 
 struct GlobalUBO {
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::mat4 viewproj;
-    alignas(16) glm::vec3 viewPos;
-    Light light;
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewproj;
+    glm::vec4 viewPos;
+    Light lights[MAX_LIGHTS];
+    glm::ivec4 numLights; // x:directional, y:point, z:spot
 };
 
 struct PushConstants {
@@ -621,11 +627,28 @@ void VulkanApp::updateUniformBuffer(uint32_t currentImage) {
     global.view = m_cam.GetView();
     global.proj = m_cam.GetProjection();
     global.viewproj = m_cam.GetProjection() * m_cam.GetView();
-    global.viewPos = glm::vec3(glm::inverse(m_cam.GetView())[3]);
-    global.light.position = glm::vec3(cos(time*0.5f), 1, sin(time*0.5f)); 
-    global.light.ambient  = glm::vec3(1);
-    global.light.diffuse  = glm::vec3(1);
-    global.light.specular = glm::vec3(1);
+    global.viewPos = glm::inverse(m_cam.GetView())[3];
+
+    global.numLights = glm::ivec4(1, 1, 1, 0); // x:directional, y:point, z:spot
+    
+    global.lights[0].direction = glm::vec4(glm::normalize(glm::vec3(-1, -1, -1)), 0);
+    global.lights[0].ambient  = glm::vec4(0.1);
+    global.lights[0].diffuse  = glm::vec4(0.1);
+    global.lights[0].specular = glm::vec4(0.1);
+
+    global.lights[1].position = glm::vec4(cos(time * 0.5f), 0.2, sin(time * 0.5f), 0);
+    global.lights[1].ambient  = glm::vec4(1);
+    global.lights[1].diffuse  = glm::vec4(1);
+    global.lights[1].specular = glm::vec4(1);
+    global.lights[1].attenuation = glm::vec4(1.0, 1.4, 3.6, 0); // x:constant, y:linear, z:quadratic
+    
+    global.lights[2].position = glm::vec4(0, 0.5, 0.0, 0);
+    global.lights[2].direction = glm::vec4(glm::normalize(glm::vec3(0, -1, 0)), 0);
+    global.lights[2].ambient = glm::vec4(1, 1, 1, 0);
+    global.lights[2].diffuse = glm::vec4(1, 1, 1, 0);
+    global.lights[2].specular = glm::vec4(1, 1, 1, 0);
+    global.lights[2].attenuation = glm::vec4(1.0, 1.4, 3.6, 0); // x:constant, y:linear, z:quadratic
+    global.lights[2].cutOff = glm::vec4(cos(12.5), cos(17.5), 0, 0); // x:inner, y:outter
 
     VkDeviceSize offset = currentImage * m_device->PadUniformBufferSize(sizeof(GlobalUBO));
 
