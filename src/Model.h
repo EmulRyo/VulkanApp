@@ -50,7 +50,5 @@ private:
     void ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout);
     void ProcessNode(aiNode* node, const aiScene* scene);
     Mesh *ProcessMesh(aiMesh* mesh, const aiScene* scene);
-    void PrintColor(const std::string& prefix, const glm::vec3& color);
-    void PrintTexture(const std::string& prefix, const Texture* tex);
 };
 

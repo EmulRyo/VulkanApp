@@ -18,6 +18,7 @@ class Device;
 class Model;
 class Texture;
 class Swapchain;
+class Pipeline;
 class RenderImage;
 class Axes;
 class Prism;
@@ -61,8 +62,9 @@ private:
     Shader* m_shader;
 
     VkRenderPass m_renderPass;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+    Pipeline* m_pipeline;
+    Pipeline* m_pipelineWireframe;
+    Pipeline* m_selectedPipeline;
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -83,6 +85,7 @@ private:
     ChronoTime m_lastTime;
 
     void FramebufferResizeCallback(int width, int height);
+    void KeyCallback(int key, int scancode, int action, int mods);
 
     void initVulkan();
 
