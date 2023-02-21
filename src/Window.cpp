@@ -5,6 +5,11 @@ static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
     instance->_FramebufferResizeCB(width, height);
 }
 
+static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto instance = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    instance->_KeyCB(key, scancode, action, mods);
+}
+
 Window::Window(int width, int height, const char* title)
     : m_width(width), m_height(height)
 {
@@ -15,6 +20,7 @@ Window::Window(int width, int height, const char* title)
     m_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, FramebufferResizeCallback);
+    glfwSetKeyCallback(m_window, KeyCallback);
 }
 
 Window::~Window() {
@@ -63,6 +69,14 @@ void Window::EventSubscribe_OnFramebufferResize(const std::function<void(int wid
     m_OnFramebufferResizeCallbackList.append(func);
 }
 
+void Window::EventSubscribe_OnKey(const std::function<void(int key, int scancode, int action, int mods)> func) {
+    m_OnKeyCallbackList.append(func);
+}
+
 void Window::_FramebufferResizeCB(int width, int height) {
     m_OnFramebufferResizeCallbackList(width, height);
+}
+
+void Window::_KeyCB(int key, int scancode, int action, int mods) {
+    m_OnKeyCallbackList(key, scancode, action, mods);
 }

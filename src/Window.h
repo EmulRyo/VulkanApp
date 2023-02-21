@@ -23,6 +23,7 @@ public:
 	void PollEvents();
 	void WaitEvents();
 	void EventSubscribe_OnFramebufferResize(const std::function<void(int width, int height)> func);
+	void EventSubscribe_OnKey(const std::function<void(int key, int scancode, int action, int mods)> func);
 	int  GetKey(int key) { return glfwGetKey(m_window, key); }
 	int  GetMouseButton(int button) { return glfwGetMouseButton(m_window, button); }
 	glm::vec2 GetMousePosition() {
@@ -33,6 +34,7 @@ public:
 	void SetInputMode(int mode, int value) { glfwSetInputMode(m_window, mode, value); }
 
 	void _FramebufferResizeCB(int width, int height);
+	void _KeyCB(int key, int scancode, int action, int mods);
 
 private:
 	GLFWwindow* m_window = nullptr;
@@ -41,5 +43,6 @@ private:
 	int m_width, m_height;
 
 	eventpp::CallbackList<void(int width, int height)> m_OnFramebufferResizeCallbackList;
+	eventpp::CallbackList<void(int key, int scancode, int action, int mods)> m_OnKeyCallbackList;
 };
 
