@@ -18,10 +18,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.vert">
+    <None Include="shaders\phong.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\shader.frag">
+    <None Include="shaders\phong.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\unlit.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\unlit.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

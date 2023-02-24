@@ -125,7 +125,7 @@ void VulkanApp::FramebufferResizeCallback(int width, int height) {
 
 void VulkanApp::KeyCallback(int key, int scancode, int action, int mods) {
     if ((key == GLFW_KEY_SPACE) && (action == GLFW_PRESS)) {
-        m_selectedPipeline = m_selectedPipeline == m_pipeline ? m_pipelineWireframe : m_pipeline;
+        m_selectedPipeline = m_selectedPipeline == m_phongPipeline ? m_unlitPipeline : m_phongPipeline;
     }
 }
 
@@ -206,7 +206,8 @@ void VulkanApp::initVulkan() {
     
     m_materialLayout = m_device->CreateDescriptorSetLayout(GetMaterialBindings());
 
-    m_shader = new Shader(*m_device, MAX_FRAMES_IN_FLIGHT, "shaders/vert.spv", "shaders/frag.spv");
+    m_phongShader = new Shader(*m_device, "shaders/phong.vert.spv", "shaders/phong.frag.spv");
+    m_unlitShader = new Shader(*m_device, "shaders/unlit.vert.spv", "shaders/unlit.frag.spv");
 
     createGraphicsPipeline();
 
@@ -366,16 +367,16 @@ void VulkanApp::createGraphicsPipeline() {
         m_globalLayout,
         m_materialLayout
     };
-    m_pipeline = new Pipeline(*m_device, m_renderPass, m_swapchain, m_shader, { m_globalLayout, m_materialLayout });
-    m_pipeline->SetMSAA(m_device->GetMSAASamples());
-    m_pipeline->SetPushConstantsSize(sizeof(PushConstants));
-    m_pipeline->Build();
+    m_phongPipeline = new Pipeline(*m_device, m_renderPass, m_swapchain, m_phongShader, { m_globalLayout, m_materialLayout });
+    m_phongPipeline->SetMSAA(m_device->GetMSAASamples());
+    m_phongPipeline->SetPushConstantsSize(sizeof(PushConstants));
+    m_phongPipeline->Build();
 
-    m_pipelineWireframe = new Pipeline(*m_pipeline);
-    m_pipelineWireframe->SetWireframeMode(true);
-    m_pipelineWireframe->Build();
+    m_unlitPipeline = new Pipeline(*m_phongPipeline);
+    m_unlitPipeline->SetShader(m_unlitShader);
+    m_unlitPipeline->Build();
 
-    m_selectedPipeline = m_pipeline;
+    m_selectedPipeline = m_phongPipeline;
 }
 
 void VulkanApp::createCommandBuffers() {
@@ -600,8 +601,8 @@ void VulkanApp::cleanupSwapChain() {
     delete m_depth;
     delete m_swapchain;
 
-    delete m_pipeline;
-    delete m_pipelineWireframe;
+    delete m_phongPipeline;
+    delete m_unlitPipeline;
     m_device->DestroyRenderPass(m_renderPass);
 }
 
@@ -621,7 +622,8 @@ void VulkanApp::cleanup() {
     m_device->DestroyDescriptorSetLayout(m_materialLayout);
     m_device->DestroyDescriptorPool(m_descriptorPool);
 
-    delete m_shader;
+    delete m_phongShader;
+    delete m_unlitShader;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_device->DestroySemaphore(renderFinishedSemaphores[i]);

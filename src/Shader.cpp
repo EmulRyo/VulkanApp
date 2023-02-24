@@ -7,9 +7,8 @@
 #include "Device.h"
 #include "Shader.h"
 
-Shader::Shader(Device& device, int maxFramesInFlight, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename):
-    m_device(device),
-    m_maxFramesInFlight(maxFramesInFlight)
+Shader::Shader(Device& device, const std::string& vertexShaderFilename, const std::string& fragmentShaderFilename):
+    m_device(device)
 {
     m_stages = CreateStages(vertexShaderFilename, fragmentShaderFilename);
 }
