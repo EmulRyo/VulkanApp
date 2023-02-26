@@ -26,6 +26,7 @@ layout(set = 1, binding = 0) uniform MaterialUBO {
     vec3 specular;
     float shininess;
     vec3 ambient;
+    vec3 emissive;
 } material;
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
 layout(set = 1, binding = 2) uniform sampler2D specularSampler;
@@ -37,7 +38,7 @@ layout(location = 3) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-vec4 CalcDirLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(-vec3(light.direction));
 
     vec3 ambient = vec3(light.ambient * texture(diffuseSampler, fragTexCoord) * vec4(material.ambient, 0));
@@ -49,10 +50,10 @@ vec4 CalcDirLight(Light light, vec3 normal, vec3 viewDir) {
     float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = vec3(light.specular * texture(specularSampler, fragTexCoord) * specularIntensity * vec4(material.specular, 0));
 
-    return vec4(fragColor*(ambient + diffuse + specular), 1);
+    return (ambient + diffuse + specular);
 }
 
-vec4 CalcPointLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(vec3(light.position) - fragPosition);
     // diffuse shading
     float diffuseIntensity = max(dot(normal, lightDir), 0.0);
@@ -71,10 +72,10 @@ vec4 CalcPointLight(Light light, vec3 normal, vec3 viewDir) {
     diffuse  *= attenuation;
     specular *= attenuation;
 
-    return vec4(fragColor*(ambient + diffuse + specular), 1);
+    return (ambient + diffuse + specular);
 }
 
-vec4 CalcSpotLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 CalcSpotLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(vec3(light.position) - fragPosition);
     float theta = dot(lightDir, normalize(-vec3(light.direction)));
     float epsilon   = light.cutOff.x - light.cutOff.y; // Inner - Outter
@@ -105,24 +106,27 @@ vec4 CalcSpotLight(Light light, vec3 normal, vec3 viewDir) {
     diffuse  *= intensity;
     specular *= intensity;
             
-    return vec4(fragColor*(ambient + diffuse + specular), 1);
+    return (ambient + diffuse + specular);
 }
 
 void main() {
     vec3 normal = normalize(fragNormal);
     vec3 viewDir = normalize(vec3(global.viewPos) - fragPosition);
     
-    outColor = vec4(0);
+    vec3 color = vec3(0);
     int numLightsOffset = 0;
     for (int i=0; i<global.numLights.x; i++) {
-        outColor += CalcDirLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += CalcDirLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
     numLightsOffset += global.numLights.x;
     for (int i=0; i<global.numLights.y; i++) {
-        outColor += CalcPointLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += CalcPointLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
     numLightsOffset += global.numLights.y;
     for (int i=0; i<global.numLights.z; i++) {
-        outColor += CalcSpotLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += CalcSpotLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
+    color = material.emissive + (fragColor * color);
+
+    outColor = vec4(color, 1.0);
 }
