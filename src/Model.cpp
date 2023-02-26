@@ -72,15 +72,18 @@ void Model::Load(const std::string& path) {
 
     aiMatrix4x4 m = scene->mRootNode->mTransformation;
 
-    aiVector3D scale, rotation, position;
-    m.Decompose(scale, rotation, position);
-    
-    Transform.Scale = glm::vec3(scale.x, scale.y, scale.z);
-    Transform.Rotation = glm::vec3(rotation.x, rotation.y, rotation.z);
-    Transform.Translation = glm::vec3(position.x, position.y, position.z);
-    
-    spdlog::debug("Assimp rootNode:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n", 
-        m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+    if (!m.IsIdentity()) {
+        aiVector3D scale, rotation, position;
+        m.Decompose(scale, rotation, position);
+
+        Transform.Scale = glm::vec3(scale.x, scale.y, scale.z);
+        Transform.Rotation = glm::vec3(rotation.x, rotation.y, rotation.z);
+        Transform.Translation = glm::vec3(position.x, position.y, position.z);
+
+        spdlog::debug("Assimp rootNode:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n",
+            m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+
+    }
 
     if (scene->mRootNode->mMetaData) {
         aiMetadata* metadata = scene->mRootNode->mMetaData;
@@ -94,8 +97,17 @@ void Model::Load(const std::string& path) {
     VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
     ProcessMaterials(scene, pool, layout);
     ProcessNode(scene->mRootNode, scene);
-    spdlog::info(
-        "Model \"{}\":\n{} meshes, {} vertices, {} indices ({} triangles)",path, m_meshes.size(), m_numVertices, m_numIndices, m_numIndices / 3);
+    spdlog::info("Model \"{}\":\n\t{} meshes\n\t{} vertices\n\t{} indices\n\t{} triangles",
+        path, m_meshes.size(), m_numVertices, m_numIndices, m_numIndices / 3);
+    for (int i = 0; i < m_meshes.size(); i++) {
+        spdlog::debug("Mesh {}: verts={}, inds={}, tris={}, material={}", 
+            i, m_meshes[i]->GetNumVertices(), m_meshes[i]->GetNumIndices(), m_meshes[i]->GetNumIndices() / 3, m_meshes[i]->GetMaterial()->GetName());
+        spdlog::debug("\tbbox = min({}, {}, {}), max({}, {}, {})",
+            m_meshes[i]->GetBBoxMin().x, m_meshes[i]->GetBBoxMin().y, m_meshes[i]->GetBBoxMin().z,
+            m_meshes[i]->GetBBoxMax().x, m_meshes[i]->GetBBoxMax().y, m_meshes[i]->GetBBoxMax().z);
+    }
+    for (int i = 0; i < m_materials.size(); i++)
+        m_materials[i]->Print("Material "+ std::to_string(i) + ": ");
 }
 
 void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
@@ -110,6 +122,7 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
 
         int shadingModel = 0;
         mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+        material->SetShadingModel(shadingModel);
 
         float shininess = 0;
         mat->Get(AI_MATKEY_SHININESS, shininess);
@@ -141,19 +154,6 @@ void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDesc
             m_textures.push_back(tex);
         }
 
-        std::string shadingModeNames[] = {
-            "Error", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
-        };
-
-        spdlog::debug("Material {}: name={}, shadingModel={}", i, material->GetName(), shadingModeNames[shadingModel]);
-        Material::PrintColor("\tdiffuse  ", material->GetDiffuseColor());
-        Material::PrintColor("\tambient  ", material->GetAmbientColor());
-        Material::PrintColor("\tspecular ", material->GetSpecularColor());
-        Material::PrintColor("\temissive ", material->GetEmissiveColor());
-        spdlog::debug(       "\tshininess = {}", material->GetShininess());
-        Material::PrintTexture("\ttex.diffuse ", material->GetDiffuseTexture());
-        Material::PrintTexture("\ttex.specular", material->GetSpecularTexture());
-
         material->UpdateUniform();
 
         m_materials.push_back(material);
@@ -171,8 +171,10 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
     glm::vec3 translation = glm::vec3(position.x, position.y, position.z);
     */
 
-    spdlog::debug("Assimp node:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n",
-        m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+    if (!m.IsIdentity()) {
+        spdlog::debug("Assimp node:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n",
+            m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
+    }
 
     // process all the node's meshes (if any)
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
@@ -181,9 +183,6 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
         Mesh* mesh = ProcessMesh(assimpMesh, scene);
         m_numVertices += mesh->GetNumVertices();
         m_numIndices += mesh->GetNumIndices();
-        spdlog::debug(
-            "Mesh {}: vertices: {}, indices: {}({} triangles), material: \"{}\"",
-            m_meshes.size(), mesh->GetNumVertices(), mesh->GetNumIndices(), mesh->GetNumIndices()/3, mesh->GetMaterial()->GetName());
         m_meshes.push_back(mesh);
     }
     // then do the same for each of its children
@@ -247,10 +246,6 @@ Mesh *Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
     if (mesh->mMaterialIndex >= 0)
         material = m_materials[mesh->mMaterialIndex];
-
-    spdlog::debug("Boundingbox, min({}, {}, {}), max({}, {}, {})",
-        mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z,
-        mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
 
     glm::vec3 bboxMin = { mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z };
     glm::vec3 bboxMax = { mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z };

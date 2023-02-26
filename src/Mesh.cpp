@@ -56,7 +56,6 @@ Mesh::Mesh(
     m_bboxMin(bboxMin),
     m_bboxMax(bboxMax)
 {
-
     CreateVertexBuffer();
     CreateIndexBuffer();
 }
@@ -68,12 +67,10 @@ Mesh::Mesh(const Mesh& other) :
 }
 
 Mesh::~Mesh() {
-    
     m_device.DestroyBuffer(m_indexBuffer);
     m_device.FreeMemory(m_indexBufferMemory);
     m_device.DestroyBuffer(m_vertexBuffer);
     m_device.FreeMemory(m_vertexBufferMemory);
-    
 }
 
 void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet)

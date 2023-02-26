@@ -37,6 +37,8 @@ public:
     size_t GetNumVertices() { return m_vertices.size(); };
     size_t GetNumIndices() { return m_indices.size(); };
     Material* GetMaterial() { return m_material; }
+    glm::vec3 GetBBoxMin() const { return m_bboxMin; };
+    glm::vec3 GetBBoxMax() const { return m_bboxMax; };
     void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet);
 
 private:

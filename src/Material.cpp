@@ -41,6 +41,13 @@ void Material::Init() {
 	SetSpecularTexture(VulkanApp::GetInstance()->GetDummyTexture());
 }
 
+const std::string& Material::GetShadingModelName() const {
+	static std::string names[] = {
+		"Error", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
+	};
+	return names[(int)m_shadingModel];
+}
+
 void Material::SetDiffuseTexture(Texture* texture) {
 	m_diffuseTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
@@ -59,6 +66,18 @@ void Material::UpdateUniform() {
 	ubo.specular = m_specularColor;
 	ubo.ambient = m_ambientColor;
 	ubo.shininess = m_shininess;
+	ubo.emissive = m_emissiveColor;
 
 	m_device.UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
+}
+
+void Material::Print(const std::string& prefix) const {
+	spdlog::debug("{}name={}, shadingModel={}", prefix, GetName(), GetShadingModelName());
+	PrintColor("\tdiffuse  ", GetDiffuseColor());
+	PrintColor("\tambient  ", GetAmbientColor());
+	PrintColor("\tspecular ", GetSpecularColor());
+	PrintColor("\temissive ", GetEmissiveColor());
+	spdlog::debug("\tshininess = {}", GetShininess());
+	PrintTexture("\ttex.diffuse ", GetDiffuseTexture());
+	PrintTexture("\ttex.specular", GetSpecularTexture());
 }

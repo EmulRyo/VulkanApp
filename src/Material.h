@@ -16,7 +16,13 @@ public:
     Material(Device &device);
     ~Material();
 
+    enum class ShadingModel {
+        Error, Flat, Gouraud, Phong, Blinn, Toon, OrenNayar, Minnaert, CookTorrance, Unlit, Fresnel, PBR
+    };
+
     const std::string& GetName() const { return m_name; }
+    ShadingModel GetShadingModel() const { return m_shadingModel; }
+    const std::string& GetShadingModelName() const;
     const glm::vec3& GetDiffuseColor() const {return m_diffuseColor; }
     const glm::vec3& GetSpecularColor() const { return m_specularColor; }
     const glm::vec3& GetAmbientColor() const { return m_ambientColor; }
@@ -24,6 +30,7 @@ public:
     const float GetShininess() const { return m_shininess; }
 
     void SetName(const std::string& name) { m_name = name; }
+    void SetShadingModel(int shadingModel) { m_shadingModel = (ShadingModel)shadingModel; }
     void SetDiffuseColor(const glm::vec3& color) { m_diffuseColor = color; }
     void SetSpecularColor(const glm::vec3& color) { m_specularColor = color; }
     void SetAmbientColor(const glm::vec3& color) { m_ambientColor = color; }
@@ -36,6 +43,8 @@ public:
     const Texture* GetSpecularTexture() const { return m_specularTex; }
     void SetDiffuseTexture(Texture* texture);
     void SetSpecularTexture(Texture* texture);
+
+    void Print(const std::string& prefix) const;
 
     VkDescriptorSet GetDescriptorSet() const { return m_materialDescSet; }
 
@@ -53,6 +62,7 @@ public:
 private:
     Device& m_device;
     std::string m_name;
+    ShadingModel m_shadingModel;
     glm::vec3 m_diffuseColor;
     glm::vec3 m_specularColor;
     glm::vec3 m_ambientColor;
@@ -66,6 +76,7 @@ private:
         alignas(16) glm::vec3 specular;
         alignas(4)  float shininess;
         alignas(16) glm::vec3 ambient;
+        alignas(16) glm::vec3 emissive;
     };
 
     VkDescriptorSet m_materialDescSet;
