@@ -112,49 +112,7 @@ void Model::Load(const std::string& path) {
 
 void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
-        Material* material = new Material(m_device);
-
-        aiMaterial* mat = scene->mMaterials[i];
-
-        aiString name;
-        mat->Get(AI_MATKEY_NAME, name);
-        material->SetName(name.C_Str());
-
-        int shadingModel = 0;
-        mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
-        material->SetShadingModel(shadingModel);
-
-        float shininess = 0;
-        mat->Get(AI_MATKEY_SHININESS, shininess);
-        material->SetShininess(shininess);
-
-        aiColor3D vec3;
-
-        mat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
-        material->SetDiffuseColor(Material::ToGlm(vec3));
-        mat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
-        material->SetAmbientColor(Material::ToGlm(vec3));
-        mat->Get(AI_MATKEY_COLOR_SPECULAR, vec3);
-        material->SetSpecularColor(Material::ToGlm(vec3));
-        mat->Get(AI_MATKEY_COLOR_EMISSIVE, vec3);
-        material->SetEmissiveColor(Material::ToGlm(vec3));
-
-        aiString texPath;
-        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
-            mat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
-            Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
-            material->SetDiffuseTexture(tex);
-            m_textures.push_back(tex);
-        }
-
-        for (unsigned int i = 0; i < mat->GetTextureCount(aiTextureType_SPECULAR); i++) {
-            mat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
-            Texture* tex = new Texture(m_device, m_directory + "/" + texPath.C_Str());
-            material->SetSpecularTexture(tex);
-            m_textures.push_back(tex);
-        }
-
-        material->UpdateUniform();
+        Material* material = new Material(m_device, scene->mMaterials[i], m_directory, m_textures);
 
         m_materials.push_back(material);
     }

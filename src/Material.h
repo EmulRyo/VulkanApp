@@ -7,13 +7,14 @@
 #include <glm/glm.hpp>
 #include "assimp/types.h"
 
-#include "Texture.h"
-
 class Device;
+class Texture;
+struct aiMaterial;
 
 class Material {
 public:
-    Material(Device &device);
+    Material(Device& device);
+    Material(Device& device, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures);
     ~Material();
 
     enum class ShadingModel {
@@ -54,10 +55,7 @@ public:
         spdlog::debug("{} = ({:.3f}, {:.3f}, {:.3f})", prefix, color.r, color.g, color.b);
     }
 
-    static void PrintTexture(const std::string& prefix, const Texture* tex) {
-        if (tex && !tex->GetFilename().empty())
-            spdlog::debug("{} = {}, ({}x{}x{})", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
-    }
+    static void PrintTexture(const std::string& prefix, const Texture* tex);
 
 private:
     Device& m_device;
@@ -84,5 +82,5 @@ private:
     VkDeviceMemory m_materialMemory;
 
     void Init();
-
+    void LoadFromAssimp(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures);
 };

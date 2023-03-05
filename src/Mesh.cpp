@@ -85,7 +85,7 @@ void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, 
     if (m_material != nullptr)
         combinedDescSets.push_back(m_material->GetDescriptorSet());
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, combinedDescSets.size(), combinedDescSets.data(), 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, (uint32_t)combinedDescSets.size(), combinedDescSets.data(), 0, nullptr);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
 }
