@@ -117,8 +117,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.15.0\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -89,7 +89,7 @@ void Model::Load(const std::string& path) {
         aiMetadata* metadata = scene->mRootNode->mMetaData;
         spdlog::debug("Assimp metadata:");
         for (unsigned int i = 0; i < metadata->mNumProperties; i++) {
-            spdlog::debug("{}: (type: {})", metadata->mKeys[i].C_Str(), metadata->mValues[i].mType);
+            spdlog::debug("{}: (type: {})", metadata->mKeys[i].C_Str(), (int)(metadata->mValues[i].mType));
         }
     }
 
