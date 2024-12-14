@@ -16,6 +16,9 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{ea20fcde-808e-4b6b-9b3f-908194eece39}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGUI">
+      <UniqueIdentifier>{0bb7179b-71e6-4a07-a3da-214fa297bbbf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\phong.frag">
@@ -29,6 +32,9 @@
     </None>
     <None Include="shaders\unlit.vert">
       <Filter>shaders</Filter>
+    </None>
+    <None Include="External\imgui-1.91.5\misc\debuggers\imgui.natstepfilter">
+      <Filter>ImGUI</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +88,27 @@
     </ClCompile>
     <ClCompile Include="src\Pipeline.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\imgui.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\imgui_demo.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\imgui_draw.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\imgui_tables.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\imgui_widgets.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\backends\imgui_impl_glfw.cpp">
+      <Filter>ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui-1.91.5\backends\imgui_impl_vulkan.cpp">
+      <Filter>ImGUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -145,5 +172,43 @@
     <ClInclude Include="src\Pipeline.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imstb_truetype.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imconfig.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imgui.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imgui_internal.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imstb_rectpack.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\imstb_textedit.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\backends\imgui_impl_vulkan.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui-1.91.5\backends\imgui_impl_glfw.h">
+      <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Timer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FPS.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="External\imgui-1.91.5\misc\debuggers\imgui.natvis">
+      <Filter>ImGUI</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

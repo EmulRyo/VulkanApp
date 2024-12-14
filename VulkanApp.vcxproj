@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.15.0\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.15.0\include;..\assimp-5.2.4\include;External\imgui-1.91.5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -136,8 +136,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.x-8348406\include;..\assimp-5.2.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.231.1\Include;External\glm;External\glfw-3.3.7.bin.WIN64\include;External\stb;External\eventpp-4a978a2\include;External\spdlog-1.15.0\include;..\assimp-5.2.4\include;External\imgui-1.91.5;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,12 +150,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="External\imgui-1.91.5\misc\debuggers\imgui.natstepfilter" />
     <None Include="shaders\phong.frag" />
     <None Include="shaders\phong.vert" />
     <None Include="shaders\unlit.frag" />
     <None Include="shaders\unlit.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="External\imgui-1.91.5\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\imgui.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\imgui_demo.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\imgui_draw.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\imgui_tables.cpp" />
+    <ClCompile Include="External\imgui-1.91.5\imgui_widgets.cpp" />
     <ClCompile Include="src\Axes.cpp" />
     <ClCompile Include="src\CameraController.cpp" />
     <ClCompile Include="src\Device.cpp" />
@@ -174,10 +183,19 @@
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="External\imgui-1.91.5\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="External\imgui-1.91.5\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="External\imgui-1.91.5\imconfig.h" />
+    <ClInclude Include="External\imgui-1.91.5\imgui.h" />
+    <ClInclude Include="External\imgui-1.91.5\imgui_internal.h" />
+    <ClInclude Include="External\imgui-1.91.5\imstb_rectpack.h" />
+    <ClInclude Include="External\imgui-1.91.5\imstb_textedit.h" />
+    <ClInclude Include="External\imgui-1.91.5\imstb_truetype.h" />
     <ClInclude Include="src\Axes.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\CameraController.h" />
     <ClInclude Include="src\Device.h" />
+    <ClInclude Include="src\FPS.h" />
     <ClInclude Include="src\GameObject.h" />
     <ClInclude Include="src\Grid.h" />
     <ClInclude Include="src\Material.h" />
@@ -190,10 +208,15 @@
     <ClInclude Include="src\Swapchain.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\Components.h" />
+    <ClInclude Include="src\Timer.h" />
     <ClInclude Include="src\Transform.h" />
     <ClInclude Include="src\ValidationLayers.h" />
     <ClInclude Include="src\VulkanApp.h" />
     <ClInclude Include="src\Window.h" />
+    <ClInclude Include="Timer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="External\imgui-1.91.5\misc\debuggers\imgui.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

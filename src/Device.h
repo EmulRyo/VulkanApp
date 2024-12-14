@@ -19,18 +19,18 @@ public:
 	Device(VkInstance instance, Window &window, ValidationLayers& validationLayers);
 	~Device();
 
-	VkDevice Get() { return m_device; }
+	VkDevice Get() const { return m_device; }
 
-	VkQueue GetGraphicsQueue() { return m_graphicsQueue; }
-	VkQueue GetPresentQueue() { return m_presentQueue; }
+	VkQueue GetGraphicsQueue() const { return m_graphicsQueue; }
+	VkQueue GetPresentQueue() const { return m_presentQueue; }
 
-	VkSampleCountFlagBits GetMSAASamples() { return m_msaaSamples; }
-	VkCommandPool GetCommandPool() { return m_commandPool; }
+	VkSampleCountFlagBits GetMSAASamples() const { return m_msaaSamples; }
+	VkCommandPool GetCommandPool() const { return m_commandPool; }
 	void GetProperties(VkPhysicalDeviceProperties* props);
 	void GetFormatProperties(VkFormat format, VkFormatProperties* props);
 	void GetMemoryProperties(VkPhysicalDeviceMemoryProperties* props);
 	QueueFamilyIndices FindQueueFamilies();
-	VkPhysicalDevice GetPhysicalDevice() { return m_physicalDevice; }
+	VkPhysicalDevice GetPhysicalDevice() const { return m_physicalDevice; }
 
 	VkCommandPool CreateCommandPool();
 	void DestroyCommandPool(VkCommandPool commandPool);

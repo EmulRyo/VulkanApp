@@ -13,6 +13,8 @@
 #include "ValidationLayers.h"
 #include "Camera.h"
 #include "CameraController.h"
+#include "Timer.h"
+#include "FPS.h"
 
 class Device;
 class Model;
@@ -29,8 +31,8 @@ public:
     ~VulkanApp();
 
     void run();
-    VkDescriptorPool GetDescriptorPool() { return m_descriptorPool; }
-    VkDescriptorSetLayout GetMaterialLayout() { return m_materialLayout; }
+    VkDescriptorPool GetDescriptorPool() const { return m_descriptorPool; }
+    VkDescriptorSetLayout GetMaterialLayout() const { return m_materialLayout; }
     Texture* GetDummyTexture() { return m_dummyTexture; }
 
     static VulkanApp* GetInstance();
@@ -80,10 +82,15 @@ private:
     RenderImage* m_color;
     RenderImage* m_depth;
 
-    using ChronoTime = std::chrono::steady_clock::time_point;
     Camera m_cam;
     CameraController m_camController;
-    ChronoTime m_lastTime;
+    GameObject *m_grid1, *m_grid2;
+    GameObject *m_axes;
+    float m_deltaTime;
+    Timer m_timerFrame;
+    FPS m_fps;
+    bool m_showGrid;
+    bool m_showAxis;
 
     void FramebufferResizeCallback(int width, int height);
     void KeyCallback(int key, int scancode, int action, int mods);
@@ -119,6 +126,15 @@ private:
     void Update(float deltaTime);
     void Draw(float deltaTime);
 
+    void DrawGameObject(GameObject* gameObject, VkCommandBuffer commandBuffer);
+
     void cleanupSwapChain();
     void cleanup();
+
+
+    int m_guiMinImageCount = 2;
+    VkDescriptorPool m_guiDescriptorPool = VK_NULL_HANDLE;
+    void GuiInit();
+    void GuiDraw(VkCommandBuffer commandBuffer);
+    void GuiCleanup();
 };

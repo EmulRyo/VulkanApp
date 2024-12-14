@@ -20,6 +20,10 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "imgui.h"
+#include "backends/imgui_impl_vulkan.h"
+#include "backends/imgui_impl_glfw.h"
+
 #include "Device.h"
 #include "Mesh.h"
 #include "Model.h"
@@ -66,7 +70,12 @@ VulkanApp::VulkanApp() :
     m_window(WIDTH, HEIGHT, "Vulkan"),
     m_validationLayers({ "VK_LAYER_KHRONOS_validation" }),
     m_instance(VK_NULL_HANDLE),
-    m_camController(m_window, m_cam)
+    m_camController(m_window, m_cam),
+    m_fps(0.5f),
+    m_deltaTime(1.0f/60.0f),
+    m_showGrid(true),
+    m_showAxis(true)
+
 {
     s_instance = this;
     spdlog::set_level(spdlog::level::level_enum::trace);
@@ -76,25 +85,23 @@ VulkanApp::VulkanApp() :
 
     initVulkan();
 
-    m_lastTime = std::chrono::high_resolution_clock::now();
+    GuiInit();
+
     VkExtent2D extent = m_swapchain->GetExtent();
     m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.01f, 100.0f);
 
 
     m_dummyTexture = new Texture(*m_device);
 
-    GameObject* grid1 = new GameObject("Grid1");
-    grid1->AddComponent<Grid>(*m_device, 10, 1.0f, 0.002f);
-    m_gameObjects.push_back(grid1);
+    m_grid1 = new GameObject("Grid1");
+    m_grid1->AddComponent<Grid>(*m_device, 10, 1.0f, 0.002f);
 
-    GameObject* grid2 = new GameObject("Grid2");
+    m_grid2 = new GameObject("Grid2");
     glm::vec3 color = { 0.2f, 0.2f, 0.2f };
-    grid2->AddComponent<Grid>(*m_device, 20, 0.1f, 0.0018f, color);
-    m_gameObjects.push_back(grid2);
+    m_grid2->AddComponent<Grid>(*m_device, 20, 0.1f, 0.0018f, color);
 
-    GameObject* axes = new GameObject("Axes");
-    axes->AddComponent<Axes>(*m_device, 100.0f, 0.0021f);
-    m_gameObjects.push_back(axes);
+    m_axes = new GameObject("Axes");
+    m_axes->AddComponent<Axes>(*m_device, 100.0f, 0.0021f);
 
     GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
     m_gameObjects.push_back(gameObject1);
@@ -110,12 +117,12 @@ VulkanApp* VulkanApp::GetInstance() {
 
 void VulkanApp::run() {
     while (!m_window.ShouldClose()) {
-        ChronoTime currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
-        m_lastTime = currentTime;
+        m_timerFrame.Start();
 
-        Update(deltaTime);
-        Draw(deltaTime);
+        Update(m_deltaTime);
+        Draw(m_deltaTime);
+
+        m_deltaTime = m_timerFrame.Stop();
     }
 }
 
@@ -442,20 +449,33 @@ void VulkanApp::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_selectedPipeline->Get());
 
-    PushConstants constants;
+    if (m_showGrid) {
+        DrawGameObject(m_grid1, commandBuffer);
+        DrawGameObject(m_grid2, commandBuffer);
+    }
+    if (m_showAxis)
+        DrawGameObject(m_axes, commandBuffer);
 
     for (int i = 0; i < m_gameObjects.size(); i++) {
-        constants.model = m_gameObjects[i]->GetComponent<Transform>()->GetMatrix() * m_gameObjects[i]->GetComponent<Model>()->Transform.GetMatrix();
-        constants.normal = glm::mat3x4(glm::transpose(glm::inverse(constants.model)));
-        vkCmdPushConstants(commandBuffer, m_selectedPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
-        m_gameObjects[i]->GetComponent<Model>()->Draw(commandBuffer, m_selectedPipeline->GetLayout(), m_globalSet[currentFrame]);
+        DrawGameObject(m_gameObjects[i], commandBuffer);
     }
+
+    GuiDraw(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
+}
+
+void VulkanApp::DrawGameObject(GameObject *gameObject, VkCommandBuffer commandBuffer) {
+    PushConstants constants{};
+
+    constants.model = gameObject->GetComponent<Transform>()->GetMatrix() * gameObject->GetComponent<Model>()->Transform.GetMatrix();
+    constants.normal = glm::mat3x4(glm::transpose(glm::inverse(constants.model)));
+    vkCmdPushConstants(commandBuffer, m_selectedPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
+    gameObject->GetComponent<Model>()->Draw(commandBuffer, m_selectedPipeline->GetLayout(), m_globalSet[currentFrame]);
 }
 
 VkFormat VulkanApp::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -482,7 +502,7 @@ VkFormat VulkanApp::FindDepthFormat() {
     );
 }
 
-void PrintGlmMatrix(const glm::mat4& m, const std::string& name) {
+static void PrintGlmMatrix(const glm::mat4& m, const std::string& name) {
     glm::vec3 scale;
     glm::quat orientation;
     glm::vec3 translation;
@@ -540,6 +560,7 @@ void VulkanApp::Update(float deltaTime) {
     m_window.PollEvents();
     
     m_camController.Update(deltaTime);
+    m_fps.Update(deltaTime);
 }
 
 void VulkanApp::Draw(float deltaTime) {
@@ -609,8 +630,13 @@ void VulkanApp::cleanupSwapChain() {
 void VulkanApp::cleanup() {
     m_device->WaitIdle();
 
+    GuiCleanup();
+
     cleanupSwapChain();
 
+    m_grid1->Dispose();
+    m_grid2->Dispose();
+    m_axes->Dispose();
     for (int i=0; i<m_gameObjects.size(); i++)
         m_gameObjects[i]->Dispose();
 
@@ -637,3 +663,90 @@ void VulkanApp::cleanup() {
     vkDestroySurfaceKHR(m_instance, m_window.GetVulkanSurface(), nullptr);
     vkDestroyInstance(m_instance, nullptr);
 }
+
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    if (err < 0)
+        abort();
+}
+
+void VulkanApp::GuiInit() {
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
+    // Create Descriptor Pool
+    // The example only requires a single combined image sampler descriptor for the font image and only uses one descriptor set (for that)
+    // If you wish to load e.g. additional textures you may need to alter pools sizes.
+    {
+        VkDescriptorPoolSize pool_sizes[] =
+        {
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+        };
+        VkDescriptorPoolCreateInfo pool_info = {};
+        pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        pool_info.maxSets = 1;
+        pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+        pool_info.pPoolSizes = pool_sizes;
+        m_device->CreateDescriptorPool(&pool_info, &m_guiDescriptorPool);
+    }
+
+    QueueFamilyIndices indices = m_device->FindQueueFamilies();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForVulkan(m_window.GetGLFWHandle(), true);
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = m_instance;
+    init_info.PhysicalDevice = m_device->GetPhysicalDevice();
+    init_info.Device = m_device->Get();
+    init_info.QueueFamily = indices.graphicsFamily.value();
+    init_info.Queue = m_device->GetGraphicsQueue();
+    init_info.PipelineCache = VK_NULL_HANDLE;
+    init_info.DescriptorPool = m_guiDescriptorPool;
+    init_info.RenderPass = m_renderPass;
+    init_info.Subpass = 0;
+    init_info.MinImageCount = m_guiMinImageCount;
+    init_info.ImageCount = 2;
+    init_info.MSAASamples = m_device->GetMSAASamples();
+    init_info.Allocator = VK_NULL_HANDLE;
+    init_info.CheckVkResultFn = check_vk_result;
+    ImGui_ImplVulkan_Init(&init_info);
+}
+
+void VulkanApp::GuiDraw(VkCommandBuffer commandBuffer) {
+    // Start the Dear ImGui frame
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Vulkan App");
+
+    ImGui::Checkbox("Show grid", &m_showGrid);
+    ImGui::Checkbox("Show axis", &m_showAxis);
+    ImGui::Text("FPS: %d (%.2f ms)", m_fps.GetFPS(), m_fps.GetFrametime()*1000.0f);
+
+    ImGui::End();
+
+    // Rendering
+    ImGui::Render();
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+}
+
+void VulkanApp::GuiCleanup() {
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    m_device->DestroyDescriptorPool(m_guiDescriptorPool);
+}
+

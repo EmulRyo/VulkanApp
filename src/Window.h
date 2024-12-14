@@ -15,6 +15,7 @@ public:
 	Window(int width, int height, const char* title);
 	~Window();
 
+	GLFWwindow* GetGLFWHandle() const { return m_window; };
 	void SetVulkanInstance(VkInstance instance) { m_instance = instance; };
 	VkSurfaceKHR GetVulkanSurface();
 	void GetFrameBufferSize(int& width, int& height);
