@@ -5,10 +5,11 @@
 #include "RenderImage.h"
 #include "Swapchain.h"
 
-Swapchain::Swapchain(Device& device, Window& window):
-m_device(device)
+Swapchain::Swapchain(Device& device, Window& window, bool vSync):
+m_device(device),
+m_vSync(vSync)
 {
-    m_swapchain = Create(m_device.GetPhysicalDevice(), window);
+    m_swapchain = Create(m_device.GetPhysicalDevice(), window, vSync);
     CreateImageViews();
 }
 
@@ -22,13 +23,16 @@ Swapchain::~Swapchain() {
     vkDestroySwapchainKHR(m_device.Get(), m_swapchain, nullptr);
 }
 
+bool Swapchain::IsVSyncEnabled() const {
+    return m_vSync;
+}
 
-VkSwapchainKHR Swapchain::Create(VkPhysicalDevice physicalDevice, Window& window) {
+VkSwapchainKHR Swapchain::Create(VkPhysicalDevice physicalDevice, Window& window, bool vSync) {
     VkSurfaceKHR surface = window.GetVulkanSurface();
     SupportDetails swapChainSupport = QuerySupport(physicalDevice, surface);
 
     VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = ChoosePresentMode(swapChainSupport.presentModes);
+    VkPresentModeKHR presentMode = ChoosePresentMode(swapChainSupport.presentModes, vSync);
     VkExtent2D extent = ChooseExtent(swapChainSupport.capabilities, window);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -114,15 +118,11 @@ VkSurfaceFormatKHR Swapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFor
     return availableFormats[0];
 }
 
-VkPresentModeKHR Swapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-
-    //for (const auto& availablePresentMode : availablePresentModes) {
-    //    if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-    //        return availablePresentMode;
-    //    }
-    //}
-
-    return VK_PRESENT_MODE_FIFO_KHR;
+VkPresentModeKHR Swapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vSync) {
+    if (vSync)
+        return VK_PRESENT_MODE_FIFO_KHR;
+    else
+        return VK_PRESENT_MODE_IMMEDIATE_KHR;
 }
 
 VkExtent2D Swapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window) {

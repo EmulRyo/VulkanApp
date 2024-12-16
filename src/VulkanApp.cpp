@@ -74,7 +74,8 @@ VulkanApp::VulkanApp() :
     m_fps(0.5f),
     m_deltaTime(1.0f/60.0f),
     m_showGrid(true),
-    m_showAxis(true)
+    m_showAxis(true),
+    m_vSync(true)
 
 {
     s_instance = this;
@@ -195,7 +196,7 @@ void VulkanApp::initVulkan() {
         throw std::runtime_error("failed to create window surface!");
 
     m_device = new Device(m_instance, m_window, m_validationLayers);
-    m_swapchain = new Swapchain(*m_device, m_window);
+    m_swapchain = new Swapchain(*m_device, m_window, m_vSync);
 
     createRenderPass();
     
@@ -280,7 +281,7 @@ void VulkanApp::recreateSwapChain() {
 
     cleanupSwapChain();
 
-    m_swapchain = new Swapchain(*m_device, m_window);
+    m_swapchain = new Swapchain(*m_device, m_window, m_vSync);
 
     createRenderPass();
     createGraphicsPipeline();
@@ -606,8 +607,8 @@ void VulkanApp::Draw(float deltaTime) {
 
     result = vkQueuePresentKHR(m_device->GetPresentQueue(), &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-        m_framebufferResized = false;
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized || m_vSyncChanged) {
+        m_framebufferResized = m_vSyncChanged = false;
         recreateSwapChain();
     }
     else if (result != VK_SUCCESS) {
@@ -734,6 +735,9 @@ void VulkanApp::GuiDraw(VkCommandBuffer commandBuffer) {
 
     ImGui::Checkbox("Show grid", &m_showGrid);
     ImGui::Checkbox("Show axis", &m_showAxis);
+    if (ImGui::Checkbox("VSync", &m_vSync)) {
+        m_vSyncChanged = true;
+    }
     ImGui::Text("FPS: %d (%.2f ms)", m_fps.GetFPS(), m_fps.GetFrametime()*1000.0f);
 
     ImGui::End();

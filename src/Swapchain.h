@@ -16,14 +16,15 @@ public:
 	};
 
 public:
-	Swapchain(Device& device, Window& window);
+	Swapchain(Device& device, Window& window, bool vSync);
 	~Swapchain();
 	
-	VkSwapchainKHR Get() { return m_swapchain; };
+	VkSwapchainKHR Get() const { return m_swapchain; };
 	std::vector<VkImageView>& GetImageViews() { return m_imageViews; }
 	const VkFormat& GetImageFormat() const { return m_imageFormat; }
 	const VkExtent2D& GetExtent() const { return m_extent; }
 	const VkFramebuffer &GetFramebuffer(size_t index) { return m_framebuffers[index]; }
+	bool IsVSyncEnabled() const;
 
 	VkResult AcquireNextImage(
 		uint64_t timeout,
@@ -43,10 +44,11 @@ private:
 	std::vector<VkImage> m_images;
 	std::vector<VkImageView> m_imageViews;
 	std::vector<VkFramebuffer> m_framebuffers;
+	bool m_vSync;
 
-	VkSwapchainKHR Create(VkPhysicalDevice physicalDevice, Window& window);
+	VkSwapchainKHR Create(VkPhysicalDevice physicalDevice, Window& window, bool vSync);
 	void CreateImageViews();
 	VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+	VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, bool vSync);
 	VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window);
 };

@@ -89,8 +89,10 @@ private:
     float m_deltaTime;
     Timer m_timerFrame;
     FPS m_fps;
+    bool m_vSync;
     bool m_showGrid;
     bool m_showAxis;
+    bool m_vSyncChanged;
 
     void FramebufferResizeCallback(int width, int height);
     void KeyCallback(int key, int scancode, int action, int mods);
