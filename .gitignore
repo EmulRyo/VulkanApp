@@ -3,3 +3,4 @@ x64/
 models/
 *.spv
 imgui.ini
+build/
