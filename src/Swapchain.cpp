@@ -4,6 +4,7 @@
 #include "Device.h"
 #include "RenderImage.h"
 #include "Swapchain.h"
+#include "Window.h"
 
 Swapchain::Swapchain(Device& device, Window& window, bool vSync):
 m_device(device),

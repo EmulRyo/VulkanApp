@@ -1,3 +1,5 @@
+#include <stdexcept>
+#include <cmath>
 #include <vulkan/vulkan.h>
 
 #define STB_IMAGE_IMPLEMENTATION

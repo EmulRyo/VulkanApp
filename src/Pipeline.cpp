@@ -1,4 +1,5 @@
 #include <array>
+#include <stdexcept>
 #include "Device.h"
 #include "Shader.h"
 #include "Mesh.h"

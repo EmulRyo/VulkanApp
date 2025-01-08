@@ -4,11 +4,11 @@
 
 #pragma warning(pop)
 
-#include "VulkanApp.h"
 #include "Device.h"
 #include "Texture.h"
-
 #include "Material.h"
+
+#include "VulkanApp.h"
 
 Material::Material(Device& device) :
 	m_device(device),

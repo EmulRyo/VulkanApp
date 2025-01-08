@@ -3,8 +3,9 @@
 
 #include <vulkan/vulkan.h>
 
-#include "Window.h"
 #include "ValidationLayers.h"
+
+class Window;
 
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;

@@ -1,6 +1,5 @@
 #include <spdlog/spdlog.h>
 
-#include "VulkanApp.h"
 #include "Texture.h"
 #include "Material.h"
 #include "Device.h"

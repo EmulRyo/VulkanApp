@@ -6,6 +6,8 @@
 
 #include "Swapchain.h"
 #include "ValidationLayers.h"
+#include "Window.h"
+
 #include "Device.h"
 
 bool QueueFamilyIndices::isComplete() {

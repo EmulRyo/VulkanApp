@@ -1,6 +1,6 @@
 #include "Camera.h"
-#include "CameraController.h"
 #include "Window.h"
+#include "CameraController.h"
 
 CameraController::CameraController(Window& window, Camera& cam):
 	m_window(window),
