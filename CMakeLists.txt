@@ -17,8 +17,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0175 OLD) #disables warning
 add_subdirectory(vendor/assimp)
 set(CMAKE_POLICY_DEFAULT_CMP0175 NEW)
 
-set(ASSIMP_DLL_FILE "")
-get_target_property(ASSIMP_DLL_FILE assimp OUTPUT_NAME)
+add_subdirectory(vendor/nativefiledialog-extended)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -110,6 +109,7 @@ target_link_libraries(VulkanApp PRIVATE
     ${Vulkan_LIBRARIES}
     glfw
     assimp
+    nfd
 )
 
 copy_dlls(VulkanApp)
