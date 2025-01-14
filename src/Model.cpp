@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -68,7 +69,7 @@ void Model::Load(const std::string& path) {
         spdlog::error("ASSIMP: {}", importer.GetErrorString());
         return;
     }
-    m_directory = path.substr(0, path.find_last_of('/'));
+    m_directory = path.substr(0, path.find_last_of(std::filesystem::path::preferred_separator));
 
     aiMatrix4x4 m = scene->mRootNode->mTransformation;
 

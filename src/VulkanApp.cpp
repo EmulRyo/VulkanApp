@@ -24,6 +24,8 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "backends/imgui_impl_glfw.h"
 
+#include "nfd.h"
+
 #include "Device.h"
 #include "Mesh.h"
 #include "Model.h"
@@ -75,8 +77,8 @@ VulkanApp::VulkanApp() :
     m_deltaTime(1.0f/60.0f),
     m_showGrid(true),
     m_showAxis(true),
-    m_vSync(true)
-
+    m_vSync(true),
+    m_selectedShader(0)
 {
     s_instance = this;
     spdlog::set_level(spdlog::level::level_enum::trace);
@@ -87,6 +89,8 @@ VulkanApp::VulkanApp() :
     initVulkan();
 
     GuiInit();
+
+    NFD_Init();
 
     VkExtent2D extent = m_swapchain->GetExtent();
     m_cam.SetPerspective(45.0f, extent.width / (float)extent.height, 0.01f, 100.0f);
@@ -103,9 +107,6 @@ VulkanApp::VulkanApp() :
 
     m_axes = new GameObject("Axes");
     m_axes->AddComponent<Axes>(*m_device, 100.0f, 0.0021f);
-
-    GameObject* gameObject1 = NewGameObject("GameObject1", MODEL_PATH);
-    m_gameObjects.push_back(gameObject1);
 }
 
 VulkanApp::~VulkanApp() {
@@ -123,6 +124,12 @@ void VulkanApp::run() {
         Update(m_deltaTime);
         Draw(m_deltaTime);
 
+        if (m_cleanModels)
+            CleanModels();
+
+        if (m_changeModel)
+            ChangeModel();
+
         m_deltaTime = m_timerFrame.Stop();
     }
 }
@@ -132,9 +139,7 @@ void VulkanApp::FramebufferResizeCallback(int width, int height) {
 }
 
 void VulkanApp::KeyCallback(int key, int scancode, int action, int mods) {
-    if ((key == GLFW_KEY_SPACE) && (action == GLFW_PRESS)) {
-        m_selectedPipeline = m_selectedPipeline == m_phongPipeline ? m_unlitPipeline : m_phongPipeline;
-    }
+
 }
 
 void VulkanApp::checkExtensions() {
@@ -663,6 +668,8 @@ void VulkanApp::cleanup() {
 
     vkDestroySurfaceKHR(m_instance, m_window.GetVulkanSurface(), nullptr);
     vkDestroyInstance(m_instance, nullptr);
+
+    NFD_Quit();
 }
 
 static void check_vk_result(VkResult err)
@@ -733,12 +740,22 @@ void VulkanApp::GuiDraw(VkCommandBuffer commandBuffer) {
 
     ImGui::Begin("Vulkan App");
 
+    if (ImGui::Button("Open file")) {
+        OpenFileDialog();
+    }
+
     ImGui::Checkbox("Show grid", &m_showGrid);
     ImGui::Checkbox("Show axis", &m_showAxis);
     if (ImGui::Checkbox("VSync", &m_vSync)) {
         m_vSyncChanged = true;
     }
+    if (ImGui::Combo("Shader", &m_selectedShader, "Phong\0Unlit\0")) {
+        m_selectedPipeline = m_selectedShader == 0 ? m_phongPipeline : m_unlitPipeline;
+    }
     ImGui::Text("FPS: %d (%.2f ms)", m_fps.GetFPS(), m_fps.GetFrametime()*1000.0f);
+
+    //bool open = true;
+    //ImGui::ShowDemoWindow(&open);
 
     ImGui::End();
 
@@ -752,5 +769,50 @@ void VulkanApp::GuiCleanup() {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
     m_device->DestroyDescriptorPool(m_guiDescriptorPool);
+}
+
+void VulkanApp::OpenFileDialog() {
+    nfdu8char_t* outPath;
+    nfdu8filteritem_t filters[1] = { { "3D Models", "fbx,obj,gltf" } };
+    nfdopendialogu8args_t args = { 0 };
+    args.filterList = filters;
+    args.filterCount = 1;
+    nfdresult_t result = NFD_OpenDialogU8_With(&outPath, &args);
+    if (result == NFD_OKAY)
+    {
+        puts(outPath);
+
+        m_changeModel = true;
+        m_modelPath = outPath;
+
+        NFD_FreePathU8(outPath);
+    }
+    else if (result == NFD_CANCEL)
+    {
+        puts("User pressed cancel.");
+    }
+    else
+    {
+        printf("Error: %s\n", NFD_GetError());
+    }
+}
+
+void VulkanApp::CleanModels() {
+    m_device->WaitIdle();
+    for (int i = 0; i < m_gameObjects.size(); i++) {
+        m_gameObjects[i]->Dispose();
+        delete m_gameObjects[i];
+    }
+    m_gameObjects.clear();
+
+    m_cleanModels = false;
+}
+
+void VulkanApp::ChangeModel() {
+    CleanModels();
+    GameObject* gameObject1 = NewGameObject("GameObject1", m_modelPath);
+    m_gameObjects.push_back(gameObject1);
+
+    m_changeModel = false;
 }
 

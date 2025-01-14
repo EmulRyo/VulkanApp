@@ -40,12 +40,6 @@ public:
 private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
-    //const std::string MODEL_PATH = "models/shiba/1.fbx";
-    //const std::string MODEL_PATH = "models/swamp-location/map_1.obj";
-    const std::string MODEL_PATH = "models/backpack/backpack.obj";
-    //const std::string MODEL_PATH = "models/pony-cartoon/Pony_cartoon.obj";
-    //const std::string MODEL_PATH = "models/che/scene.gltf";
-    //const std::string MODEL_PATH = "models/bmw.obj";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -68,6 +62,7 @@ private:
     Pipeline* m_phongPipeline;
     Pipeline* m_unlitPipeline;
     Pipeline* m_selectedPipeline;
+    int m_selectedShader;
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -93,6 +88,10 @@ private:
     bool m_showGrid;
     bool m_showAxis;
     bool m_vSyncChanged;
+
+    bool m_changeModel = false;
+    bool m_cleanModels = false;
+    std::string m_modelPath;
 
     void FramebufferResizeCallback(int width, int height);
     void KeyCallback(int key, int scancode, int action, int mods);
@@ -133,10 +132,13 @@ private:
     void cleanupSwapChain();
     void cleanup();
 
-
     int m_guiMinImageCount = 2;
     VkDescriptorPool m_guiDescriptorPool = VK_NULL_HANDLE;
     void GuiInit();
     void GuiDraw(VkCommandBuffer commandBuffer);
     void GuiCleanup();
+
+    void CleanModels();
+    void ChangeModel();
+    void OpenFileDialog();
 };
