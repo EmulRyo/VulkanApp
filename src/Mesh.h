@@ -25,7 +25,6 @@ class Mesh
 {
 public:
     Mesh(
-        Device& device, 
         const std::vector<Vertex>& vertices, 
         const std::vector<uint32_t>& indices, 
         Material *material, 
@@ -39,10 +38,9 @@ public:
     Material* GetMaterial() { return m_material; }
     glm::vec3 GetBBoxMin() const { return m_bboxMin; };
     glm::vec3 GetBBoxMax() const { return m_bboxMax; };
-    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet);
+    void Draw(glm::mat4 matrix);
 
 private:
-    Device& m_device;
     // mesh data
     std::vector<Vertex>   m_vertices;
     std::vector<uint32_t> m_indices;
@@ -56,7 +54,7 @@ private:
     VkDeviceMemory m_indexBufferMemory;
 
 private:
-    void CreateVertexBuffer();
-    void CreateIndexBuffer();
+    void CreateVertexBuffer(Device* device);
+    void CreateIndexBuffer(Device* device);
 };
 

@@ -8,10 +8,9 @@
 #include "Texture.h"
 #include "Material.h"
 
-#include "VulkanApp.h"
+#include "Vulkan.h"
 
-Material::Material(Device& device) :
-	m_device(device),
+Material::Material() :
 	m_name("No name"),
 	m_diffuseColor(glm::vec3(1.0f)),
 	m_specularColor(glm::vec3(0.0f)),
@@ -25,8 +24,7 @@ Material::Material(Device& device) :
 	Init();
 }
 
-Material::Material(Device& device, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures) :
-	m_device(device),
+Material::Material(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures) :
 	m_name("No name"),
 	m_diffuseColor(glm::vec3(1.0f)),
 	m_specularColor(glm::vec3(0.0f)),
@@ -43,25 +41,28 @@ Material::Material(Device& device, const aiMaterial* assimpMat, const std::strin
 }
 
 Material::~Material() {
-	m_device.DestroyBuffer(m_materialBuffer);
-	m_device.FreeMemory(m_materialMemory);
+	Device* device = VulkanGetDevice();
+	device->DestroyBuffer(m_materialBuffer);
+	device->FreeMemory(m_materialMemory);
 }
 
 void Material::Init() {
-	VkDescriptorPool pool = VulkanApp::GetInstance()->GetDescriptorPool();
-	VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
+	VkDescriptorPool pool = VulkanGetDescriptorPool();
+	VkDescriptorSetLayout layout = VulkanGetMaterialLayout();
 
-	m_device.CreateBuffer(
+	Device* device = VulkanGetDevice();
+
+	device->CreateBuffer(
 		sizeof(MaterialUBO),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		m_materialBuffer,
 		m_materialMemory);
 
-	m_materialDescSet = m_device.AllocateDescriptorSet(pool, layout);
-	m_device.UpdateUniformDescriptorSet(m_materialDescSet, 0, m_materialBuffer, sizeof(MaterialUBO));
+	m_materialDescSet = device->AllocateDescriptorSet(pool, layout);
+	device->UpdateUniformDescriptorSet(m_materialDescSet, 0, m_materialBuffer, sizeof(MaterialUBO));
 
-	SetDiffuseTexture(VulkanApp::GetInstance()->GetDummyTexture());
-	SetSpecularTexture(VulkanApp::GetInstance()->GetDummyTexture());
+	SetDiffuseTexture(VulkanGetDummyTexture());
+	SetSpecularTexture(VulkanGetDummyTexture());
 }
 
 void Material::LoadFromAssimp(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures) {
@@ -91,14 +92,14 @@ void Material::LoadFromAssimp(const aiMaterial* assimpMat, const std::string& di
 	aiString texPath;
 	for (unsigned int i = 0; i < assimpMat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
 		assimpMat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
-		Texture* tex = new Texture(m_device, directory + "/" + texPath.C_Str());
+		Texture* tex = new Texture(directory + "/" + texPath.C_Str());
 		SetDiffuseTexture(tex);
 		textures.push_back(tex);
 	}
 
 	for (unsigned int i = 0; i < assimpMat->GetTextureCount(aiTextureType_SPECULAR); i++) {
 		assimpMat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
-		Texture* tex = new Texture(m_device, directory + "/" + texPath.C_Str());
+		Texture* tex = new Texture(directory + "/" + texPath.C_Str());
 		SetSpecularTexture(tex);
 		textures.push_back(tex);
 	}
@@ -116,13 +117,13 @@ const std::string& Material::GetShadingModelName() const {
 void Material::SetDiffuseTexture(Texture* texture) {
 	m_diffuseTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
-	m_device.UpdateSamplerDescriptorSet(m_materialDescSet, 1, imgInfo);
+	VulkanGetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 1, imgInfo);
 }
 
 void Material::SetSpecularTexture(Texture* texture) {
 	m_specularTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
-	m_device.UpdateSamplerDescriptorSet(m_materialDescSet, 2, imgInfo);
+	VulkanGetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 2, imgInfo);
 }
 
 void Material::UpdateUniform() {
@@ -133,7 +134,7 @@ void Material::UpdateUniform() {
 	ubo.shininess = m_shininess;
 	ubo.emissive = m_emissiveColor;
 
-	m_device.UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
+	VulkanGetDevice()->UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
 }
 
 void Material::Print(const std::string& prefix) const {

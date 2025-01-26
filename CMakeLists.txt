@@ -79,6 +79,8 @@ set(SRC
     src/Transform.h
     src/ValidationLayers.cpp
     src/ValidationLayers.h
+    src/Vulkan.cpp
+    src/Vulkan.h
     src/VulkanApp.cpp
     src/VulkanApp.h
     src/Window.cpp

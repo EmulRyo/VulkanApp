@@ -7,14 +7,12 @@
 #include "Mesh.h"
 #include "Model.h"
 
-class Device;
 class Mesh;
 
 class Grid: public Model
 {
 public:
-    Grid(Device& device, int slices, float spacing, float thickness, glm::vec3 color = {0.9f, 0.9f, 0.9f})
-        : Model(device) 
+    Grid(int slices, float spacing, float thickness, glm::vec3 color = {0.9f, 0.9f, 0.9f})
     { 
         Load(slices, spacing, thickness, color);
     }

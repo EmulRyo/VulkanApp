@@ -8,18 +8,17 @@ class Device;
 class Texture
 {
 public:
-	Texture(Device& device);
-	Texture(Device &device, const std::string &filename, bool mipmapping=true);
+	Texture();
+	Texture(const std::string &filename, bool mipmapping=true);
 	~Texture();
 
-	VkDescriptorImageInfo GetDescriptorImageInfo();
+	VkDescriptorImageInfo GetDescriptorImageInfo() const;
 	const std::string& GetFilename() const { return m_filename; }
 	int GetWidth() const { return m_width; }
 	int GetHeight() const { return m_height; }
 	int GetChannels() const { return m_channels; }
 
 private:
-	Device& m_device;
 	std::string m_filename;
 	bool mipmapping;
 	int m_width;

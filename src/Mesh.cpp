@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "Texture.h"
 #include "Material.h"
+#include "Vulkan.h"
 
 #include "Mesh.h"
 
@@ -42,90 +43,81 @@ std::array<VkVertexInputAttributeDescription, 4> Vertex::getAttributeDescription
 }
 
 Mesh::Mesh(
-    Device& device, 
     const std::vector<Vertex>& vertices, 
     const std::vector<unsigned int>& indices, 
     Material *material,
     const glm::vec3& bboxMin,
     const glm::vec3& bboxMax)
 :
-    m_device(device),
     m_vertices(vertices),
     m_indices(indices),
     m_material(material),
     m_bboxMin(bboxMin),
     m_bboxMax(bboxMax)
 {
-    CreateVertexBuffer();
-    CreateIndexBuffer();
+    Device* device = VulkanGetDevice();
+    CreateVertexBuffer(device);
+    CreateIndexBuffer(device);
 }
 
 Mesh::Mesh(const Mesh& other) :
-    Mesh(other.m_device, other.m_vertices, other.m_indices, other.m_material, other.m_bboxMin, other.m_bboxMin)
+    Mesh(other.m_vertices, other.m_indices, other.m_material, other.m_bboxMin, other.m_bboxMin)
 {
 
 }
 
 Mesh::~Mesh() {
-    m_device.DestroyBuffer(m_indexBuffer);
-    m_device.FreeMemory(m_indexBufferMemory);
-    m_device.DestroyBuffer(m_vertexBuffer);
-    m_device.FreeMemory(m_vertexBufferMemory);
+    Device* device = VulkanGetDevice();
+    device->DestroyBuffer(m_indexBuffer);
+    device->FreeMemory(m_indexBufferMemory);
+    device->DestroyBuffer(m_vertexBuffer);
+    device->FreeMemory(m_vertexBufferMemory);
 }
 
-void Mesh::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet)
+void Mesh::Draw(glm::mat4 matrix)
 {
-    VkBuffer vertexBuffers[] = { m_vertexBuffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-    std::vector<VkDescriptorSet> combinedDescSets;
-    combinedDescSets.push_back(globalSet);
+    VkDescriptorSet materialDescSet = VK_NULL_HANDLE;
     if (m_material != nullptr)
-        combinedDescSets.push_back(m_material->GetDescriptorSet());
-
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, (uint32_t)combinedDescSets.size(), combinedDescSets.data(), 0, nullptr);
-
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_indices.size()), 1, 0, 0, 0);
+        materialDescSet = m_material->GetDescriptorSet();
+    VulkanDraw(matrix, m_vertexBuffer, m_indexBuffer, m_indices.size(), materialDescSet);
 }
 
-void Mesh::CreateVertexBuffer() {
+void Mesh::CreateVertexBuffer(Device* device) {
     VkDeviceSize bufferSize = sizeof(m_vertices[0]) * m_vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
-    m_device.MapMemory(stagingBufferMemory, 0, bufferSize, 0, &data);
+    device->MapMemory(stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, m_vertices.data(), (size_t)bufferSize);
-    m_device.UnmapMemory(stagingBufferMemory);
+    device->UnmapMemory(stagingBufferMemory);
 
-    m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
+    device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
 
-    m_device.CopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+    device->CopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
 
-    m_device.DestroyBuffer(stagingBuffer);
-    m_device.FreeMemory(stagingBufferMemory);
+    device->DestroyBuffer(stagingBuffer);
+    device->FreeMemory(stagingBufferMemory);
 }
 
-void Mesh::CreateIndexBuffer() {
+void Mesh::CreateIndexBuffer(Device* device) {
     VkDeviceSize bufferSize = sizeof(m_indices[0]) * m_indices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
-    m_device.MapMemory(stagingBufferMemory, 0, bufferSize, 0, &data);
+    device->MapMemory(stagingBufferMemory, 0, bufferSize, 0, &data);
     memcpy(data, m_indices.data(), (size_t)bufferSize);
-    m_device.UnmapMemory(stagingBufferMemory);
+    device->UnmapMemory(stagingBufferMemory);
 
-    m_device.CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+    device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
 
-    m_device.CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+    device->CopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
 
-    m_device.DestroyBuffer(stagingBuffer);
-    m_device.FreeMemory(stagingBufferMemory);
+    device->DestroyBuffer(stagingBuffer);
+    device->FreeMemory(stagingBufferMemory);
 }

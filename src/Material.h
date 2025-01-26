@@ -13,8 +13,8 @@ struct aiMaterial;
 
 class Material {
 public:
-    Material(Device& device);
-    Material(Device& device, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures);
+    Material();
+    Material(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures);
     ~Material();
 
     enum class ShadingModel {
@@ -58,7 +58,6 @@ public:
     static void PrintTexture(const std::string& prefix, const Texture* tex);
 
 private:
-    Device& m_device;
     std::string m_name;
     ShadingModel m_shadingModel;
     glm::vec3 m_diffuseColor;

@@ -19,22 +19,21 @@ class Material;
 class Model: public Component
 {
 public:
-    Model(Device& device) : m_device(device) {};
-    Model(Device& device, std::vector<Material*> materials, std::vector<Mesh*> meshes);
-    Model(Device& device, const std::string &path): m_device(device) { Load(path); }
+    Model() {};
+    Model(std::vector<Material*> materials, std::vector<Mesh*> meshes);
+    Model(const std::string &path) { Load(path); }
     ~Model();
-    void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet);
+    void Draw(glm::mat4 matrix);
 
     static ComponentType GetTypeStatic() { return ComponentType::Model; }
     ComponentType GetType() { return GetTypeStatic(); }
 
-    glm::vec3 GetBBoxMin() { return m_bboxMin; }
-    glm::vec3 GetBBoxMax() { return m_bboxMax; }
+    glm::vec3 GetBBoxMin() const { return m_bboxMin; }
+    glm::vec3 GetBBoxMax() const { return m_bboxMax; }
     glm::vec3 GetSize() { return { m_bboxMax.x - m_bboxMin.x, m_bboxMax.y - m_bboxMin.y, m_bboxMax.z - m_bboxMin.z }; }
 
     Transform Transform;
 protected:
-    Device& m_device;
     // model data
     std::vector<Material *> m_materials;
     std::vector<Texture*> m_textures;

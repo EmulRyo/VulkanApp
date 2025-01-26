@@ -7,17 +7,17 @@
 
 #include "Device.h"
 #include "Texture.h"
+#include "Vulkan.h"
 
-Texture::Texture(Device& device)
-    : m_device(device)
+Texture::Texture()
 {
     CreateImage();
     CreateImageView();
     CreateSampler();
 }
 
-Texture::Texture(Device& device, const std::string& filename, bool mipmapping)
-    : m_device(device), m_filename(filename)
+Texture::Texture(const std::string& filename, bool mipmapping) :
+    m_filename(filename)
 {
     CreateImage(filename);
     CreateImageView();
@@ -25,10 +25,11 @@ Texture::Texture(Device& device, const std::string& filename, bool mipmapping)
 }
 
 Texture::~Texture() {
-    m_device.DestroySampler(m_sampler);
-    m_device.DestroyImageView(m_imageView);
-    m_device.DestroyImage(m_image);
-    m_device.FreeMemory(m_deviceMemory);
+    Device* device = VulkanGetDevice();
+    device->DestroySampler(m_sampler);
+    device->DestroyImageView(m_imageView);
+    device->DestroyImage(m_image);
+    device->FreeMemory(m_deviceMemory);
 }
 
 void Texture::CreateImage() {
@@ -58,36 +59,38 @@ void Texture::CreateImage(const std::string& filename) {
 }
 
 void Texture::CreateImage(VkDeviceSize imageSize, unsigned char *pixels) {
+    Device* device = VulkanGetDevice();
+
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    m_device.CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    device->CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
     void* data;
-    m_device.MapMemory(stagingBufferMemory, 0, imageSize, 0, &data);
+    device->MapMemory(stagingBufferMemory, 0, imageSize, 0, &data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
-    m_device.UnmapMemory(stagingBufferMemory);
+    device->UnmapMemory(stagingBufferMemory);
 
-    m_device.CreateImage(m_width, m_height, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_image, m_deviceMemory);
+    device->CreateImage(m_width, m_height, m_mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_image, m_deviceMemory);
 
-    m_device.TransitionImageLayout(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
-    m_device.CopyBufferToImage(stagingBuffer, m_image, static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height));
+    device->TransitionImageLayout(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
+    device->CopyBufferToImage(stagingBuffer, m_image, static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height));
     GenerateMipmaps(m_image, VK_FORMAT_R8G8B8A8_SRGB, m_width, m_height, m_mipLevels);
 
-    m_device.DestroyBuffer(stagingBuffer);
-    m_device.FreeMemory(stagingBufferMemory);
+    device->DestroyBuffer(stagingBuffer);
+    device->FreeMemory(stagingBufferMemory);
 }
 
 void Texture::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
-
+    Device* device = VulkanGetDevice();
     // Check if image format supports linear blitting
     VkFormatProperties formatProperties;
-    m_device.GetFormatProperties(imageFormat, &formatProperties);
+    device->GetFormatProperties(imageFormat, &formatProperties);
 
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
         throw std::runtime_error("texture image format does not support linear blitting!");
     }
 
-    VkCommandBuffer commandBuffer = m_device.BeginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = device->BeginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -162,16 +165,16 @@ void Texture::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
         0, nullptr,
         1, &barrier);
 
-    m_device.EndSingleTimeCommands(commandBuffer);
+    device->EndSingleTimeCommands(commandBuffer);
 }
 
 void Texture::CreateImageView() {
-    m_imageView = m_device.CreateImageView(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
+    m_imageView = VulkanGetDevice()->CreateImageView(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
 }
 
 void Texture::CreateSampler() {
     VkPhysicalDeviceProperties properties{};
-    m_device.GetProperties(&properties);
+    VulkanGetDevice()->GetProperties(&properties);
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -191,12 +194,12 @@ void Texture::CreateSampler() {
     samplerInfo.maxLod = static_cast<float>(m_mipLevels);
     samplerInfo.mipLodBias = 0.0f;
 
-    if (m_device.CreateSampler(&samplerInfo, &m_sampler) != VK_SUCCESS) {
+    if (VulkanGetDevice()->CreateSampler(&samplerInfo, &m_sampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
-VkDescriptorImageInfo Texture::GetDescriptorImageInfo() {
+VkDescriptorImageInfo Texture::GetDescriptorImageInfo() const {
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = m_imageView;

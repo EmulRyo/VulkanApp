@@ -7,14 +7,12 @@
 #include "Mesh.h"
 #include "Model.h"
 
-class Device;
 class Mesh;
 
 class Axes: public Model
 {
 public:
-    Axes(Device& device, float length, float thickness)
-        : Model(device) 
+    Axes(float length, float thickness)
     { 
         Load(length, thickness);
     }

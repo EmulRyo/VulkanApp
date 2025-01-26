@@ -31,51 +31,17 @@ public:
     ~VulkanApp();
 
     void run();
-    VkDescriptorPool GetDescriptorPool() const { return m_descriptorPool; }
-    VkDescriptorSetLayout GetMaterialLayout() const { return m_materialLayout; }
-    Texture* GetDummyTexture() { return m_dummyTexture; }
-
-    static VulkanApp* GetInstance();
 
 private:
     const uint32_t WIDTH = 800;
     const uint32_t HEIGHT = 600;
 
-    const int MAX_FRAMES_IN_FLIGHT = 2;
-
     Window m_window;
-    ValidationLayers m_validationLayers;
-    VkInstance m_instance;
-    Device* m_device;
-    Swapchain* m_swapchain;
 
-    VkDescriptorPool m_descriptorPool;
-    VkDescriptorSetLayout m_globalLayout, m_materialLayout;
-    std::vector<VkDescriptorSet> m_globalSet;
-    VkBuffer m_globalBuffer;
-    VkDeviceMemory m_globalMemory;
-
-    Shader* m_phongShader;
-    Shader* m_unlitShader;
-
-    VkRenderPass m_renderPass;
-    Pipeline* m_phongPipeline;
-    Pipeline* m_unlitPipeline;
-    Pipeline* m_selectedPipeline;
     int m_selectedShader;
-
-    std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
     bool m_framebufferResized = false;
-    uint32_t currentFrame = 0;
 
     std::vector<GameObject *> m_gameObjects;
-    Texture* m_dummyTexture;
-
-    RenderImage* m_color;
-    RenderImage* m_depth;
 
     Camera m_cam;
     CameraController m_camController;
@@ -96,47 +62,18 @@ private:
     void FramebufferResizeCallback(int width, int height);
     void KeyCallback(int key, int scancode, int action, int mods);
 
-    void initVulkan();
-
-    std::vector<VkDescriptorSetLayoutBinding> GetGlobalBindings();
-    std::vector<VkDescriptorSetLayoutBinding> GetMaterialBindings();
-
-    void checkExtensions();
-
-    void createInstance();
-
-    void recreateSwapChain();
-
-    void createRenderPass();
-    void createGraphicsPipeline();
-    void CreateRenderImages();
-
-    void createCommandBuffers();
-
-    void createSyncObjects();
-
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-    void updateUniformBuffer(uint32_t currentImage);
-
-    VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    VkFormat FindDepthFormat();
+    void UpdateUniformBuffer();
 
     GameObject* NewGameObject(const std::string name, std::string modelPath);
 
     void Update(float deltaTime);
     void Draw(float deltaTime);
 
-    void DrawGameObject(GameObject* gameObject, VkCommandBuffer commandBuffer);
+    void DrawGameObject(GameObject* gameObject);
 
-    void cleanupSwapChain();
-    void cleanup();
+    void Cleanup();
 
-    int m_guiMinImageCount = 2;
-    VkDescriptorPool m_guiDescriptorPool = VK_NULL_HANDLE;
-    void GuiInit();
-    void GuiDraw(VkCommandBuffer commandBuffer);
-    void GuiCleanup();
+    void GuiDraw();
 
     void CleanModels();
     void ChangeModel();

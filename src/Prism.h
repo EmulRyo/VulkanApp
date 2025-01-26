@@ -13,7 +13,6 @@ class Prism: public Model
 {
 public:
     Prism(Device& device, float xMin, float xMax, float yMin, float yMax, float zMin, float zMax, glm::vec3 color)
-        : Model(device) 
     { 
         Load(xMin, xMax, yMin, yMax, zMin, zMax, color);
     }

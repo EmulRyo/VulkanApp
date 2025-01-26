@@ -12,15 +12,15 @@
 #include "Texture.h"
 #include "Device.h"
 #include "Material.h"
-#include "VulkanApp.h"
+#include "Vulkan.h"
 #include "Model.h"
 
 class AssimpStream : public Assimp::LogStream {
 public: void write(const char* message) { spdlog::error("{}", message); }
 };
 
-Model::Model(Device& device, std::vector<Material*> materials, std::vector<Mesh*> meshes)
-    : m_device(device), m_materials(materials), m_meshes(meshes)
+Model::Model(std::vector<Material*> materials, std::vector<Mesh*> meshes)
+    : m_materials(materials), m_meshes(meshes)
 {
     m_bboxMin.x = m_bboxMin.y = m_bboxMin.z = std::numeric_limits<float>::max();
     m_bboxMax.x = m_bboxMax.y = m_bboxMax.z = std::numeric_limits<float>::min();
@@ -39,10 +39,11 @@ Model::~Model() {
         delete m_textures[i];
 }
 
-void Model::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, VkDescriptorSet globalSet)
+void Model::Draw(glm::mat4 matrix)
 {
+    glm::mat4 newMatrix = matrix * Transform.GetMatrix();
     for (unsigned int i = 0; i < m_meshes.size(); i++)
-        m_meshes[i]->Draw(commandBuffer, pipelineLayout, globalSet);
+        m_meshes[i]->Draw(newMatrix);
 }
 
 void Model::Load(const std::string& path) {
@@ -94,8 +95,8 @@ void Model::Load(const std::string& path) {
         }
     }
 
-    VkDescriptorPool pool = VulkanApp::GetInstance()->GetDescriptorPool();
-    VkDescriptorSetLayout layout = VulkanApp::GetInstance()->GetMaterialLayout();
+    VkDescriptorPool pool = VulkanGetDescriptorPool();
+    VkDescriptorSetLayout layout = VulkanGetMaterialLayout();
     ProcessMaterials(scene, pool, layout);
     ProcessNode(scene->mRootNode, scene);
     spdlog::info("Model \"{}\":\n\t{} meshes\n\t{} vertices\n\t{} indices\n\t{} triangles",
@@ -113,7 +114,7 @@ void Model::Load(const std::string& path) {
 
 void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
-        Material* material = new Material(m_device, scene->mMaterials[i], m_directory, m_textures);
+        Material* material = new Material(scene->mMaterials[i], m_directory, m_textures);
 
         m_materials.push_back(material);
     }
@@ -216,5 +217,5 @@ Mesh *Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     m_bboxMax.y = std::max(m_bboxMax.y, bboxMax.y);
     m_bboxMax.z = std::max(m_bboxMax.z, bboxMax.z);
 
-    return new Mesh(m_device, vertices, indices, material, bboxMin, bboxMax);
+    return new Mesh(vertices, indices, material, bboxMin, bboxMax);
 }

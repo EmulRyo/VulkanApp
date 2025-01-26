@@ -5,6 +5,8 @@
 #include "Shader.h"
 #include "Device.h"
 
+class Swapchain;
+
 class Pipeline {
 public:
     Pipeline(

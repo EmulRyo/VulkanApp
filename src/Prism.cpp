@@ -29,6 +29,6 @@ void Prism::Load(float xMin, float xMax, float yMin, float yMax, float zMin, flo
         0, 3, 2
     };
     Material* material = nullptr;
-    Mesh* mesh = new Mesh(m_device, vertices, indices, material, { xMin, yMin, zMin }, { xMax, yMax, zMax });
+    Mesh* mesh = new Mesh(vertices, indices, material, { xMin, yMin, zMin }, { xMax, yMax, zMax });
     m_meshes.push_back(mesh);
 }

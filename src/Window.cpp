@@ -35,11 +35,18 @@ VkSurfaceKHR Window::GetVulkanSurface() {
     return m_surface;
 }
 
-void Window::GetFrameBufferSize(int& width, int& height) {
+void Window::GetFrameBufferSize(int& width, int& height) const {
     glfwGetFramebufferSize(m_window, &width, &height);
 }
 
-std::vector<const char*> Window::GetRequiredExtensions(bool enableValidationLayers) {
+float Window::GetAspectRatio() const {
+    int width = 0;
+    int height = 0;
+    glfwGetWindowSize(m_window, &width, &height);
+    return (float)width / height;
+}
+
+std::vector<const char*> Window::GetRequiredExtensions(bool enableValidationLayers) const {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
@@ -53,15 +60,15 @@ std::vector<const char*> Window::GetRequiredExtensions(bool enableValidationLaye
     return extensions;
 }
 
-bool Window::ShouldClose() {
+bool Window::ShouldClose() const {
     return glfwWindowShouldClose(m_window) != 0;
 }
 
-void Window::PollEvents() {
+void Window::PollEvents() const {
     glfwPollEvents();
 }
 
-void Window::WaitEvents() {
+void Window::WaitEvents() const {
     glfwWaitEvents();
 }
 
