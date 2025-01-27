@@ -92,7 +92,7 @@ void VulkanApp::run() {
 }
 
 void VulkanApp::FramebufferResizeCallback(int width, int height) {
-    m_framebufferResized = true;
+    m_cam.SetPerspectiveAspectRatio(width / (float)height);
 }
 
 void VulkanApp::KeyCallback(int key, int scancode, int action, int mods) {
@@ -194,14 +194,7 @@ void VulkanApp::Draw(float deltaTime) {
 
     GuiDraw();
 
-    bool recreateSwapchain = m_framebufferResized || m_vSyncChanged;
-    VulkanEndDrawing(recreateSwapchain);
-    if (recreateSwapchain) {
-        m_framebufferResized = m_vSyncChanged = false;
-        int width = 0, height = 0;
-        m_window.GetFrameBufferSize(width, height);
-        m_cam.SetPerspectiveAspectRatio(width / (float)height);
-    }
+    VulkanEndDrawing();
 }
 
 void VulkanApp::Cleanup() {
@@ -232,7 +225,6 @@ void VulkanApp::GuiDraw() {
     ImGui::Checkbox("Show grid", &m_showGrid);
     ImGui::Checkbox("Show axis", &m_showAxis);
     if (ImGui::Checkbox("VSync", &m_vSync)) {
-        m_vSyncChanged = true;
         VulkanSetVSync(m_vSync);
     }
     if (ImGui::Combo("Shader", &m_selectedShader, "Phong\0Unlit\0")) {

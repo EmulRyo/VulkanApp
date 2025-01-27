@@ -29,6 +29,7 @@ void CreateRenderImages();
 void CheckExtensions(const Window& window);
 void CreateCommandBuffers();
 void CreateSyncObjects();
+void FramebufferResizeCallback(int width, int height);
 
 VkInstance m_instance;
 ValidationLayers m_validationLayers({ "VK_LAYER_KHRONOS_validation" });
@@ -61,6 +62,8 @@ uint32_t m_imageIndex;
 uint32_t currentFrame = 0;
 
 Window* m_window = nullptr;
+bool m_framebufferResized = false;
+bool m_vSyncChanged = false;
 bool m_vSync = true;
 
 void VulkanInit(Window &window, bool vSync) {
@@ -104,6 +107,8 @@ void VulkanInit(Window &window, bool vSync) {
     CreateSyncObjects();
 
     m_dummyTexture = new Texture();
+
+    m_window->EventSubscribe_OnFramebufferResize(&FramebufferResizeCallback);
 }
 
 void CreateInstance(Window& window) {
@@ -342,6 +347,7 @@ void CreateSyncObjects() {
 }
 
 void VulkanSetVSync(bool value) {
+    m_vSyncChanged = true;
     m_vSync = value;
 }
 
@@ -367,6 +373,13 @@ void RecreateSwapChain() {
     CreateGraphicsPipeline();
     CreateRenderImages();
     m_swapchain->CreateFramebuffers(*m_color, *m_depth, m_renderPass);
+
+    m_framebufferResized = false;
+    m_vSyncChanged = false;
+}
+
+void FramebufferResizeCallback(int width, int height) {
+    m_framebufferResized = true;
 }
 
 Texture* VulkanGetDummyTexture() {
@@ -447,7 +460,7 @@ void VulkanDraw(glm::mat4 matrix, VkBuffer vertexBuffer, VkBuffer indexBuffer, u
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
-void VulkanEndDrawing(bool recreateSwapchain) {
+void VulkanEndDrawing() {
     VkCommandBuffer commandBuffer = commandBuffers[currentFrame];
 
     vkCmdEndRenderPass(commandBuffer);
@@ -477,7 +490,7 @@ void VulkanEndDrawing(bool recreateSwapchain) {
 
     VkResult result = vkQueuePresentKHR(m_device->GetPresentQueue(), &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || recreateSwapchain) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized || m_vSyncChanged) {
         RecreateSwapChain();
     }
     else if (result != VK_SUCCESS) {

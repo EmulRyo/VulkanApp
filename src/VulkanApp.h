@@ -39,7 +39,6 @@ private:
     Window m_window;
 
     int m_selectedShader;
-    bool m_framebufferResized = false;
 
     std::vector<GameObject *> m_gameObjects;
 
@@ -53,7 +52,6 @@ private:
     bool m_vSync;
     bool m_showGrid;
     bool m_showAxis;
-    bool m_vSyncChanged;
 
     bool m_changeModel = false;
     bool m_cleanModels = false;

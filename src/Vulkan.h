@@ -39,7 +39,7 @@ VkDescriptorSetLayout   VulkanGetMaterialLayout();
 void                    VulkanSetVSync(bool value);
 void                    VulkanSetPipeline(int id);
 void                    VulkanBeginDrawing();
-void                    VulkanEndDrawing(bool recreateSwapchain);
+void                    VulkanEndDrawing();
 void                    VulkanDraw(glm::mat4 matrix, VkBuffer vertexBuffer, VkBuffer indexBuffer, uint32_t indexCount, VkDescriptorSet materialDescSet);
 void                    VulkanUpdateUniformBuffer(size_t bufferSize, void* data);
 void                    VulkanWaitIdle();
