@@ -95,8 +95,8 @@ void Model::Load(const std::string& path) {
         }
     }
 
-    VkDescriptorPool pool = VulkanGetDescriptorPool();
-    VkDescriptorSetLayout layout = VulkanGetMaterialLayout();
+    VkDescriptorPool pool = Vulkan::GetDescriptorPool();
+    VkDescriptorSetLayout layout = Vulkan::GetMaterialLayout();
     ProcessMaterials(scene, pool, layout);
     ProcessNode(scene->mRootNode, scene);
     spdlog::info("Model \"{}\":\n\t{} meshes\n\t{} vertices\n\t{} indices\n\t{} triangles",

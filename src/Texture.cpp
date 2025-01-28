@@ -25,7 +25,7 @@ Texture::Texture(const std::string& filename, bool mipmapping) :
 }
 
 Texture::~Texture() {
-    Device* device = VulkanGetDevice();
+    Device* device = Vulkan::GetDevice();
     device->DestroySampler(m_sampler);
     device->DestroyImageView(m_imageView);
     device->DestroyImage(m_image);
@@ -59,7 +59,7 @@ void Texture::CreateImage(const std::string& filename) {
 }
 
 void Texture::CreateImage(VkDeviceSize imageSize, unsigned char *pixels) {
-    Device* device = VulkanGetDevice();
+    Device* device = Vulkan::GetDevice();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -81,7 +81,7 @@ void Texture::CreateImage(VkDeviceSize imageSize, unsigned char *pixels) {
 }
 
 void Texture::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
-    Device* device = VulkanGetDevice();
+    Device* device = Vulkan::GetDevice();
     // Check if image format supports linear blitting
     VkFormatProperties formatProperties;
     device->GetFormatProperties(imageFormat, &formatProperties);
@@ -169,12 +169,12 @@ void Texture::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 }
 
 void Texture::CreateImageView() {
-    m_imageView = VulkanGetDevice()->CreateImageView(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
+    m_imageView = Vulkan::GetDevice()->CreateImageView(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
 }
 
 void Texture::CreateSampler() {
     VkPhysicalDeviceProperties properties{};
-    VulkanGetDevice()->GetProperties(&properties);
+    Vulkan::GetDevice()->GetProperties(&properties);
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -194,7 +194,7 @@ void Texture::CreateSampler() {
     samplerInfo.maxLod = static_cast<float>(m_mipLevels);
     samplerInfo.mipLodBias = 0.0f;
 
-    if (VulkanGetDevice()->CreateSampler(&samplerInfo, &m_sampler) != VK_SUCCESS) {
+    if (Vulkan::GetDevice()->CreateSampler(&samplerInfo, &m_sampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }

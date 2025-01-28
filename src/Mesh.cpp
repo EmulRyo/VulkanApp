@@ -55,7 +55,7 @@ Mesh::Mesh(
     m_bboxMin(bboxMin),
     m_bboxMax(bboxMax)
 {
-    Device* device = VulkanGetDevice();
+    Device* device = Vulkan::GetDevice();
     CreateVertexBuffer(device);
     CreateIndexBuffer(device);
 }
@@ -67,7 +67,7 @@ Mesh::Mesh(const Mesh& other) :
 }
 
 Mesh::~Mesh() {
-    Device* device = VulkanGetDevice();
+    Device* device = Vulkan::GetDevice();
     device->DestroyBuffer(m_indexBuffer);
     device->FreeMemory(m_indexBufferMemory);
     device->DestroyBuffer(m_vertexBuffer);
@@ -79,7 +79,7 @@ void Mesh::Draw(glm::mat4 matrix)
     VkDescriptorSet materialDescSet = VK_NULL_HANDLE;
     if (m_material != nullptr)
         materialDescSet = m_material->GetDescriptorSet();
-    VulkanDraw(matrix, m_vertexBuffer, m_indexBuffer, m_indices.size(), materialDescSet);
+    Vulkan::Draw(matrix, m_vertexBuffer, m_indexBuffer, m_indices.size(), materialDescSet);
 }
 
 void Mesh::CreateVertexBuffer(Device* device) {

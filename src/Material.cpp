@@ -41,16 +41,16 @@ Material::Material(const aiMaterial* assimpMat, const std::string& directory, st
 }
 
 Material::~Material() {
-	Device* device = VulkanGetDevice();
+	Device* device = Vulkan::GetDevice();
 	device->DestroyBuffer(m_materialBuffer);
 	device->FreeMemory(m_materialMemory);
 }
 
 void Material::Init() {
-	VkDescriptorPool pool = VulkanGetDescriptorPool();
-	VkDescriptorSetLayout layout = VulkanGetMaterialLayout();
+	VkDescriptorPool pool = Vulkan::GetDescriptorPool();
+	VkDescriptorSetLayout layout = Vulkan::GetMaterialLayout();
 
-	Device* device = VulkanGetDevice();
+	Device* device = Vulkan::GetDevice();
 
 	device->CreateBuffer(
 		sizeof(MaterialUBO),
@@ -61,8 +61,8 @@ void Material::Init() {
 	m_materialDescSet = device->AllocateDescriptorSet(pool, layout);
 	device->UpdateUniformDescriptorSet(m_materialDescSet, 0, m_materialBuffer, sizeof(MaterialUBO));
 
-	SetDiffuseTexture(VulkanGetDummyTexture());
-	SetSpecularTexture(VulkanGetDummyTexture());
+	SetDiffuseTexture(Vulkan::GetDummyTexture());
+	SetSpecularTexture(Vulkan::GetDummyTexture());
 }
 
 void Material::LoadFromAssimp(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures) {
@@ -117,13 +117,13 @@ const std::string& Material::GetShadingModelName() const {
 void Material::SetDiffuseTexture(Texture* texture) {
 	m_diffuseTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
-	VulkanGetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 1, imgInfo);
+	Vulkan::GetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 1, imgInfo);
 }
 
 void Material::SetSpecularTexture(Texture* texture) {
 	m_specularTex = texture;
 	VkDescriptorImageInfo imgInfo = texture->GetDescriptorImageInfo();
-	VulkanGetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 2, imgInfo);
+	Vulkan::GetDevice()->UpdateSamplerDescriptorSet(m_materialDescSet, 2, imgInfo);
 }
 
 void Material::UpdateUniform() {
@@ -134,7 +134,7 @@ void Material::UpdateUniform() {
 	ubo.shininess = m_shininess;
 	ubo.emissive = m_emissiveColor;
 
-	VulkanGetDevice()->UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
+	Vulkan::GetDevice()->UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
 }
 
 void Material::Print(const std::string& prefix) const {

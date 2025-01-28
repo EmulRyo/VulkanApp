@@ -4,13 +4,9 @@
 #include <optional>
 #include <vector>
 
-#include <vulkan/vulkan.h>
-
 #include <glm/glm.hpp>
 
 #include "Window.h"
-#include "Shader.h"
-#include "ValidationLayers.h"
 #include "Camera.h"
 #include "CameraController.h"
 #include "Timer.h"
@@ -18,10 +14,6 @@
 
 class Device;
 class Model;
-class Texture;
-class Swapchain;
-class Pipeline;
-class RenderImage;
 class Axes;
 class Prism;
 
@@ -57,23 +49,19 @@ private:
     bool m_cleanModels = false;
     std::string m_modelPath;
 
-    void FramebufferResizeCallback(int width, int height);
-    void KeyCallback(int key, int scancode, int action, int mods);
-
-    void UpdateUniformBuffer();
-
+    void OpenFileDialog();
+    void ChangeModel();
     GameObject* NewGameObject(const std::string name, std::string modelPath);
+    void UpdateUniformBuffer();
 
     void Update(float deltaTime);
     void Draw(float deltaTime);
-
     void DrawGameObject(GameObject* gameObject);
-
-    void Cleanup();
-
     void GuiDraw();
 
     void CleanModels();
-    void ChangeModel();
-    void OpenFileDialog();
+    void Cleanup();
+
+    void FramebufferResizeCallback(int width, int height);
+    void KeyCallback(int key, int scancode, int action, int mods);
 };

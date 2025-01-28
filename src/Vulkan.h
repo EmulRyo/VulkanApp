@@ -31,22 +31,24 @@ struct PushConstants {
 
 class Texture;
 
-void                    VulkanInit(Window& window, bool vSync);
-Device*                 VulkanGetDevice();
-Texture*                VulkanGetDummyTexture();
-VkDescriptorPool        VulkanGetDescriptorPool();
-VkDescriptorSetLayout   VulkanGetMaterialLayout();
-void                    VulkanSetVSync(bool value);
-void                    VulkanSetPipeline(int id);
-void                    VulkanBeginDrawing();
-void                    VulkanEndDrawing();
-void                    VulkanDraw(glm::mat4 matrix, VkBuffer vertexBuffer, VkBuffer indexBuffer, uint32_t indexCount, VkDescriptorSet materialDescSet);
-void                    VulkanUpdateUniformBuffer(size_t bufferSize, void* data);
-void                    VulkanWaitIdle();
-void                    VulkanCleanupSwapChain();
-void                    VulkanCleanup();
+class Vulkan {
+public:
+    static void                    Init(Window& window, bool vSync);
+    static Device*                 GetDevice();
+    static Texture*                GetDummyTexture();
+    static VkDescriptorPool        GetDescriptorPool();
+    static VkDescriptorSetLayout   GetMaterialLayout();
+    static void                    SetVSync(bool value);
+    static void                    SetPipeline(int id);
+    static void                    BeginDrawing();
+    static void                    EndDrawing();
+    static void                    Draw(glm::mat4 matrix, VkBuffer vertexBuffer, VkBuffer indexBuffer, uint32_t indexCount, VkDescriptorSet materialDescSet);
+    static void                    UpdateUniformBuffer(size_t bufferSize, void* data);
+    static void                    WaitIdle();
+    static void                    Cleanup();
 
-void                    VulkanImGuiInit();
-void                    VulkanImGuiBeginDrawing();
-void                    VulkanImGuiEndDrawing();
-void                    VulkanImGuiCleanup();
+    static void                    ImGuiInit();
+    static void                    ImGuiBeginDrawing();
+    static void                    ImGuiEndDrawing();
+    static void                    ImGuiCleanup();
+};

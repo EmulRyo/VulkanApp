@@ -10,8 +10,6 @@
 
 #include <spdlog/spdlog.h>
 
-#include <vulkan/vulkan.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -28,7 +26,6 @@
 #include "Mesh.h"
 #include "Model.h"
 #include "Texture.h"
-#include "Shader.h"
 #include "Camera.h"
 #include "Axes.h"
 #include "Grid.h"
@@ -48,14 +45,14 @@ VulkanApp::VulkanApp() :
 {
     spdlog::set_level(spdlog::level::level_enum::trace);
 
-    m_window.EventSubscribe_OnFramebufferResize(std::bind(&VulkanApp::FramebufferResizeCallback, this, std::placeholders::_1, std::placeholders::_2));
-    m_window.EventSubscribe_OnKey(std::bind(&VulkanApp::KeyCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    Vulkan::Init(m_window, m_vSync);
 
-    VulkanInit(m_window, m_vSync);
-
-    VulkanImGuiInit();
+    Vulkan::ImGuiInit();
 
     NFD_Init();
+
+    m_window.EventSubscribe_OnFramebufferResize(std::bind(&VulkanApp::FramebufferResizeCallback, this, std::placeholders::_1, std::placeholders::_2));
+    m_window.EventSubscribe_OnKey(std::bind(&VulkanApp::KeyCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
     m_cam.SetPerspective(45.0f, m_window.GetAspectRatio(), 0.01f, 100.0f);
 
@@ -166,7 +163,7 @@ void VulkanApp::UpdateUniformBuffer() {
     global.lights[2].attenuation = glm::vec4(1.0, 1.4, 3.6, 0); // x:constant, y:linear, z:quadratic
     global.lights[2].cutOff = glm::vec4(cos(12.5), cos(17.5), 0, 0); // x:inner, y:outter
 
-    VulkanUpdateUniformBuffer(sizeof(GlobalUBO), &global);
+    Vulkan::UpdateUniformBuffer(sizeof(GlobalUBO), &global);
 }
 
 void VulkanApp::Update(float deltaTime) {
@@ -177,7 +174,7 @@ void VulkanApp::Update(float deltaTime) {
 }
 
 void VulkanApp::Draw(float deltaTime) {
-    VulkanBeginDrawing();
+    Vulkan::BeginDrawing();
 
     UpdateUniformBuffer();
 
@@ -194,11 +191,11 @@ void VulkanApp::Draw(float deltaTime) {
 
     GuiDraw();
 
-    VulkanEndDrawing();
+    Vulkan::EndDrawing();
 }
 
 void VulkanApp::Cleanup() {
-    VulkanWaitIdle();
+    Vulkan::WaitIdle();
 
     m_grid1->Dispose();
     m_grid2->Dispose();
@@ -206,15 +203,15 @@ void VulkanApp::Cleanup() {
     for (int i=0; i<m_gameObjects.size(); i++)
         m_gameObjects[i]->Dispose();
 
-    VulkanImGuiCleanup();
+    Vulkan::ImGuiCleanup();
 
-    VulkanCleanup();
+    Vulkan::Cleanup();
 
     NFD_Quit();
 }
 
 void VulkanApp::GuiDraw() {
-    VulkanImGuiBeginDrawing();
+    Vulkan::ImGuiBeginDrawing();
 
     ImGui::Begin("Vulkan App");
 
@@ -225,10 +222,10 @@ void VulkanApp::GuiDraw() {
     ImGui::Checkbox("Show grid", &m_showGrid);
     ImGui::Checkbox("Show axis", &m_showAxis);
     if (ImGui::Checkbox("VSync", &m_vSync)) {
-        VulkanSetVSync(m_vSync);
+        Vulkan::SetVSync(m_vSync);
     }
     if (ImGui::Combo("Shader", &m_selectedShader, "Phong\0Unlit\0")) {
-        VulkanSetPipeline(m_selectedShader);
+        Vulkan::SetPipeline(m_selectedShader);
     }
     ImGui::Text("FPS: %d (%.2f ms)", m_fps.GetFPS(), m_fps.GetFrametime()*1000.0f);
 
@@ -237,7 +234,7 @@ void VulkanApp::GuiDraw() {
 
     ImGui::End();
 
-    VulkanImGuiEndDrawing();
+    Vulkan::ImGuiEndDrawing();
 }
 
 void VulkanApp::OpenFileDialog() {
@@ -267,7 +264,7 @@ void VulkanApp::OpenFileDialog() {
 }
 
 void VulkanApp::CleanModels() {
-    VulkanWaitIdle();
+    Vulkan::WaitIdle();
     for (int i = 0; i < m_gameObjects.size(); i++) {
         m_gameObjects[i]->Dispose();
         delete m_gameObjects[i];
