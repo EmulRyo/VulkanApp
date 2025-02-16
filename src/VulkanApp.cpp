@@ -89,7 +89,8 @@ void VulkanApp::run() {
 }
 
 void VulkanApp::FramebufferResizeCallback(int width, int height) {
-    m_cam.SetPerspectiveAspectRatio(width / (float)height);
+    if (height > 0)
+        m_cam.SetPerspectiveAspectRatio(width / (float)height);
 }
 
 void VulkanApp::KeyCallback(int key, int scancode, int action, int mods) {
@@ -239,28 +240,19 @@ void VulkanApp::GuiDraw() {
 
 void VulkanApp::OpenFileDialog() {
     nfdu8char_t* outPath;
-    nfdu8filteritem_t filters[1] = { { "3D Models", "fbx,obj,gltf" } };
+    nfdu8filteritem_t filters[1] = { { "3D Models", "fbx,obj,gltf,glb" } };
     nfdopendialogu8args_t args = { 0 };
     args.filterList = filters;
     args.filterCount = 1;
     nfdresult_t result = NFD_OpenDialogU8_With(&outPath, &args);
     if (result == NFD_OKAY)
     {
-        puts(outPath);
-
         m_changeModel = true;
         m_modelPath = outPath;
-
         NFD_FreePathU8(outPath);
     }
-    else if (result == NFD_CANCEL)
-    {
-        puts("User pressed cancel.");
-    }
-    else
-    {
+    else if (result == NFD_ERROR)
         printf("Error: %s\n", NFD_GetError());
-    }
 }
 
 void VulkanApp::CleanModels() {

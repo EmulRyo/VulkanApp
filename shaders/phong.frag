@@ -38,7 +38,7 @@ layout(location = 3) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 DirLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(-vec3(light.direction));
 
     vec3 ambient = vec3(light.ambient * texture(diffuseSampler, fragTexCoord) * vec4(material.ambient, 0));
@@ -53,7 +53,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir) {
     return (ambient + diffuse + specular);
 }
 
-vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 PointLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(vec3(light.position) - fragPosition);
     // diffuse shading
     float diffuseIntensity = max(dot(normal, lightDir), 0.0);
@@ -75,7 +75,7 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir) {
     return (ambient + diffuse + specular);
 }
 
-vec3 CalcSpotLight(Light light, vec3 normal, vec3 viewDir) {
+vec3 SpotLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 lightDir = normalize(vec3(light.position) - fragPosition);
     float theta = dot(lightDir, normalize(-vec3(light.direction)));
     float epsilon   = light.cutOff.x - light.cutOff.y; // Inner - Outter
@@ -116,15 +116,16 @@ void main() {
     vec3 color = vec3(0);
     int numLightsOffset = 0;
     for (int i=0; i<global.numLights.x; i++) {
-        color += CalcDirLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += DirLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
+    
     numLightsOffset += global.numLights.x;
     for (int i=0; i<global.numLights.y; i++) {
-        color += CalcPointLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += PointLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
     numLightsOffset += global.numLights.y;
     for (int i=0; i<global.numLights.z; i++) {
-        color += CalcSpotLight(global.lights[numLightsOffset+i], normal, viewDir);
+        color += SpotLight(global.lights[numLightsOffset+i], normal, viewDir);
     }
     color = material.emissive + (fragColor * color);
 

@@ -49,5 +49,8 @@ private:
     void ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout);
     void ProcessNode(aiNode* node, const aiScene* scene);
     Mesh *ProcessMesh(aiMesh* mesh, const aiScene* scene);
+    void LogMetadata(const aiScene* scene) const;
+    void LogMeshes() const;
+    void LogMaterials() const;
 };
 

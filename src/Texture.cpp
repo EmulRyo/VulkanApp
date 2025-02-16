@@ -1,6 +1,9 @@
-#include <stdexcept>
 #include <cmath>
+#include <filesystem>
+#include <stdexcept>
+
 #include <vulkan/vulkan.h>
+#include <spdlog/spdlog.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -9,7 +12,14 @@
 #include "Texture.h"
 #include "Vulkan.h"
 
-Texture::Texture()
+Texture::Texture() :
+    m_filename(""),
+    m_width(0),
+    m_height(0),
+    m_channels(0),
+    m_format(""),
+    m_createdFromFile(false),
+    m_default(true)
 {
     CreateImage();
     CreateImageView();
@@ -17,22 +27,47 @@ Texture::Texture()
 }
 
 Texture::Texture(const std::string& filename, bool mipmapping) :
-    m_filename(filename)
+    m_filename(filename),
+    m_width(0),
+    m_height(0),
+    m_channels(0),
+    m_format(""),
+    m_createdFromFile(true),
+    m_default(false)
 {
     CreateImage(filename);
+    if (IsValid()) {
+        CreateImageView();
+        CreateSampler();
+    }
+}
+
+Texture::Texture(const unsigned char* buffer, size_t size, const std::string& internalName, const std::string& format) :
+    m_filename(internalName),
+    m_width(0),
+    m_height(0),
+    m_channels(0),
+    m_format(format),
+    m_createdFromFile(false),
+    m_default(false)
+{
+    CreateImage(buffer, size);
     CreateImageView();
     CreateSampler();
 }
 
 Texture::~Texture() {
-    Device* device = Vulkan::GetDevice();
-    device->DestroySampler(m_sampler);
-    device->DestroyImageView(m_imageView);
-    device->DestroyImage(m_image);
-    device->FreeMemory(m_deviceMemory);
+    if (IsValid()) {
+        Device* device = Vulkan::GetDevice();
+        device->DestroySampler(m_sampler);
+        device->DestroyImageView(m_imageView);
+        device->DestroyImage(m_image);
+        device->FreeMemory(m_deviceMemory);
+    }
 }
 
 void Texture::CreateImage() {
+    m_filename = "Default 1x1";
     m_width = m_height = 1;
     m_channels = 4;
     unsigned char pixels[] = {255, 255, 255, 255};
@@ -45,10 +80,29 @@ void Texture::CreateImage() {
 
 void Texture::CreateImage(const std::string& filename) {
     stbi_uc* pixels = stbi_load(filename.c_str(), &m_width, &m_height, &m_channels, STBI_rgb_alpha);
+
+    if (!pixels) {
+        spdlog::error("Failed to load texture image ({})!: {}", filename, stbi_failure_reason());
+        return;
+    }
+
+    m_format = std::filesystem::path(filename).extension().u8string();
+
+    VkDeviceSize imageSize = m_width * m_height * 4;
+
+    m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
+
+    CreateImage(imageSize, pixels);
+
+    stbi_image_free(pixels);
+}
+
+void Texture::CreateImage(const unsigned char* buffer, size_t size) {
+    stbi_uc* pixels = stbi_load_from_memory(buffer, size, &m_width, &m_height, &m_channels, STBI_rgb_alpha);
     VkDeviceSize imageSize = m_width * m_height * 4;
 
     if (!pixels) {
-        throw std::runtime_error("failed to load texture image (\""+filename+"\")!: "+stbi_failure_reason());
+        throw std::runtime_error(std::string("failed to load texture image from memory!: ") + stbi_failure_reason());
     }
 
     m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(m_width, m_height)))) + 1;
@@ -206,4 +260,8 @@ VkDescriptorImageInfo Texture::GetDescriptorImageInfo() const {
     imageInfo.sampler = m_sampler;
 
     return imageInfo;
+}
+
+bool Texture::IsValid() const {
+    return ((m_width > 0) && (m_height > 0) && (m_channels > 0));
 }

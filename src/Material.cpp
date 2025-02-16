@@ -1,5 +1,8 @@
 #pragma warning(push, 0) // Ocultar warnings de las librerias
 
+#include <filesystem>
+
+#include "assimp/scene.h"
 #include "assimp/material.h"
 
 #pragma warning(pop)
@@ -24,7 +27,7 @@ Material::Material() :
 	Init();
 }
 
-Material::Material(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures) :
+Material::Material(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures) :
 	m_name("No name"),
 	m_diffuseColor(glm::vec3(1.0f)),
 	m_specularColor(glm::vec3(0.0f)),
@@ -37,7 +40,7 @@ Material::Material(const aiMaterial* assimpMat, const std::string& directory, st
 {
 	Init();
 
-	LoadFromAssimp(assimpMat, directory, textures);
+	LoadFromAssimp(scene, assimpMat, directory, textures);
 }
 
 Material::~Material() {
@@ -65,7 +68,7 @@ void Material::Init() {
 	SetSpecularTexture(Vulkan::GetDummyTexture());
 }
 
-void Material::LoadFromAssimp(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures) {
+void Material::LoadFromAssimp(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures) {
 	aiString name;
 	assimpMat->Get(AI_MATKEY_NAME, name);
 	SetName(name.C_Str());
@@ -80,31 +83,71 @@ void Material::LoadFromAssimp(const aiMaterial* assimpMat, const std::string& di
 
 	aiColor3D vec3;
 
-	assimpMat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
-	SetDiffuseColor(ToGlm(vec3));
-	assimpMat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
-	SetAmbientColor(ToGlm(vec3));
-	assimpMat->Get(AI_MATKEY_COLOR_SPECULAR, vec3);
-	SetSpecularColor(ToGlm(vec3));
-	assimpMat->Get(AI_MATKEY_COLOR_EMISSIVE, vec3);
-	SetEmissiveColor(ToGlm(vec3));
-
-	aiString texPath;
-	for (unsigned int i = 0; i < assimpMat->GetTextureCount(aiTextureType_DIFFUSE); i++) {
-		assimpMat->GetTexture(aiTextureType_DIFFUSE, i, &texPath);
-		Texture* tex = new Texture(directory + "/" + texPath.C_Str());
-		SetDiffuseTexture(tex);
-		textures.push_back(tex);
+	aiReturn r = aiReturn_FAILURE;
+	r = assimpMat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
+	SetDiffuseColor(r == aiReturn_SUCCESS ? ToGlm(vec3) : glm::vec3(0));
+	r = assimpMat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
+	SetAmbientColor(r == aiReturn_SUCCESS ? ToGlm(vec3) : glm::vec3(0));
+	r = assimpMat->Get(AI_MATKEY_COLOR_SPECULAR, vec3);
+	SetSpecularColor(r == aiReturn_SUCCESS ? ToGlm(vec3) : glm::vec3(0));
+	r = assimpMat->Get(AI_MATKEY_COLOR_EMISSIVE, vec3);
+	SetEmissiveColor(r == aiReturn_SUCCESS ? ToGlm(vec3) : glm::vec3(0));
+	
+	Texture* diffuseTex  = GetTexture(scene, assimpMat, directory, aiTextureType_DIFFUSE, 0);
+	Texture* specularTex = GetTexture(scene, assimpMat, directory, aiTextureType_SPECULAR, 0);
+	if (diffuseTex) {
+		SetDiffuseTexture(diffuseTex);
+		textures.push_back(diffuseTex);
 	}
-
-	for (unsigned int i = 0; i < assimpMat->GetTextureCount(aiTextureType_SPECULAR); i++) {
-		assimpMat->GetTexture(aiTextureType_SPECULAR, i, &texPath);
-		Texture* tex = new Texture(directory + "/" + texPath.C_Str());
-		SetSpecularTexture(tex);
-		textures.push_back(tex);
+	if (specularTex) {
+		SetSpecularTexture(specularTex);
+		textures.push_back(specularTex);
 	}
 
 	UpdateUniform();
+}
+
+Texture* Material::GetTexture(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, aiTextureType type, unsigned int index) const {
+	aiString texPath;
+	aiReturn r = assimpMat->GetTexture(type, index, &texPath);
+	if (r == aiReturn_FAILURE)
+		return nullptr;
+
+	const aiTexture* embeddedTexture = scene->GetEmbeddedTexture(texPath.C_Str());
+	if (embeddedTexture != nullptr) {
+		if (embeddedTexture->mHeight == 0) { // embedded file
+			Texture* tex = new Texture((const unsigned char*)embeddedTexture->pcData, (size_t)embeddedTexture->mWidth, texPath.C_Str(), embeddedTexture->achFormatHint);
+			return tex;
+		}
+		else {  // embedded raw data
+			return nullptr;
+		}
+	}
+	else {
+		const char* shortName = scene->GetShortFilename(texPath.C_Str());
+		std::string path = "";
+		if (std::filesystem::exists(texPath.C_Str()))
+			path = texPath.C_Str();
+		else if (std::filesystem::exists(directory + "/" + texPath.C_Str()))
+			path = directory + "/" + texPath.C_Str();
+		else if (std::filesystem::exists(directory + "/" + shortName))
+			path = directory + "/" + shortName;
+		else if (std::filesystem::exists(directory + "/../textures/" + shortName))
+			path = std::filesystem::absolute(directory + "/../textures/" + shortName).u8string();
+		else
+			spdlog::error("Texture {} not found", texPath.C_Str());
+
+		if (!path.empty()) {
+			Texture* tex = new Texture(path);
+			if (tex->IsValid()) {
+				return tex;
+			}
+			else {
+				delete tex;
+			}
+		}
+	}
+	return nullptr;
 }
 
 const std::string& Material::GetShadingModelName() const {
@@ -137,18 +180,26 @@ void Material::UpdateUniform() {
 	Vulkan::GetDevice()->UpdateUniformBuffer(m_materialMemory, 0, sizeof(MaterialUBO), &ubo);
 }
 
-void Material::Print(const std::string& prefix) const {
-	spdlog::debug("{}name={}, shadingModel={}", prefix, GetName(), GetShadingModelName());
-	PrintColor("\tdiffuse  ", GetDiffuseColor());
-	PrintColor("\tambient  ", GetAmbientColor());
-	PrintColor("\tspecular ", GetSpecularColor());
-	PrintColor("\temissive ", GetEmissiveColor());
-	spdlog::debug("\tshininess = {}", GetShininess());
-	PrintTexture("\ttex.diffuse ", GetDiffuseTexture());
-	PrintTexture("\ttex.specular", GetSpecularTexture());
+void Material::Log(const std::string& prefix, fmt::memory_buffer &out) const {
+	fmt::format_to(std::back_inserter(out), "{}name=\"{}\", shadingModel={}\n", prefix, GetName(), GetShadingModelName());
+	LogColor("\tdiffuse  ", GetDiffuseColor(), out);
+	LogColor("\tambient  ", GetAmbientColor(), out);
+	LogColor("\tspecular ", GetSpecularColor(), out);
+	LogColor("\temissive ", GetEmissiveColor(), out);
+	fmt::format_to(std::back_inserter(out), "\tshininess = {}\n", GetShininess());
+	LogTexture("\ttex.diffuse ", GetDiffuseTexture(), out);
+	LogTexture("\ttex.specular", GetSpecularTexture(), out);
 }
 
-void Material::PrintTexture(const std::string& prefix, const Texture* tex) {
-	if (tex && !tex->GetFilename().empty())
-		spdlog::debug("{} = {}, ({}x{}x{})", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
+void Material::LogTexture(const std::string& prefix, const Texture* tex, fmt::memory_buffer& out) {
+	if (tex && !tex->IsDefault() && tex->IsValid()) {
+		if (tex->IsCreatedFromFile())
+			fmt::format_to(std::back_inserter(out), "{} = \"{}\", ({}x{}x{})\n", prefix, tex->GetFilename(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
+		else
+			fmt::format_to(std::back_inserter(out), "{} = \"{}\" (embedded {}), ({}x{}x{})\n", prefix, tex->GetFilename(), tex->GetFormat(), tex->GetWidth(), tex->GetHeight(), tex->GetChannels());
+	}
+}
+
+void Material::LogColor(const std::string& prefix, const glm::vec3& color, fmt::memory_buffer& out) {
+	fmt::format_to(std::back_inserter(out), "{} = ({:.3f}, {:.3f}, {:.3f})\n", prefix, color.r, color.g, color.b);
 }

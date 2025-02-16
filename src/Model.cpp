@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <filesystem>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -56,12 +57,14 @@ void Model::Load(const std::string& path) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path,
         aiProcess_JoinIdenticalVertices |
-        aiProcess_GenNormals |
+        aiProcess_GenSmoothNormals |
         aiProcess_Triangulate |
         aiProcess_FlipUVs |
         aiProcess_ValidateDataStructure |
         aiProcess_GenBoundingBoxes |
-        aiProcess_PreTransformVertices
+        aiProcess_PreTransformVertices |
+        aiProcess_FindInvalidData |
+        aiProcess_TransformUVCoords
         //aiProcess_GlobalScale
     );
 
@@ -70,10 +73,10 @@ void Model::Load(const std::string& path) {
         spdlog::error("ASSIMP: {}", importer.GetErrorString());
         return;
     }
+
     m_directory = path.substr(0, path.find_last_of(std::filesystem::path::preferred_separator));
 
     aiMatrix4x4 m = scene->mRootNode->mTransformation;
-
     if (!m.IsIdentity()) {
         aiVector3D scale, rotation, position;
         m.Decompose(scale, rotation, position);
@@ -84,7 +87,6 @@ void Model::Load(const std::string& path) {
 
         spdlog::debug("Assimp rootNode:\n[{}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}\n {}, {}, {}, {}]\n",
             m.a1, m.a2, m.a3, m.a4, m.b1, m.b2, m.b3, m.b4, m.c1, m.c2, m.c3, m.c4, m.d1, m.d2, m.d3, m.d4);
-
     }
 
     if (scene->mRootNode->mMetaData) {
@@ -99,22 +101,18 @@ void Model::Load(const std::string& path) {
     VkDescriptorSetLayout layout = Vulkan::GetMaterialLayout();
     ProcessMaterials(scene, pool, layout);
     ProcessNode(scene->mRootNode, scene);
-    spdlog::info("Model \"{}\":\n\t{} meshes\n\t{} vertices\n\t{} indices\n\t{} triangles",
-        path, m_meshes.size(), m_numVertices, m_numIndices, m_numIndices / 3);
-    for (int i = 0; i < m_meshes.size(); i++) {
-        spdlog::debug("Mesh {}: verts={}, inds={}, tris={}, material={}", 
-            i, m_meshes[i]->GetNumVertices(), m_meshes[i]->GetNumIndices(), m_meshes[i]->GetNumIndices() / 3, m_meshes[i]->GetMaterial()->GetName());
-        spdlog::debug("\tbbox = min({}, {}, {}), max({}, {}, {})",
-            m_meshes[i]->GetBBoxMin().x, m_meshes[i]->GetBBoxMin().y, m_meshes[i]->GetBBoxMin().z,
-            m_meshes[i]->GetBBoxMax().x, m_meshes[i]->GetBBoxMax().y, m_meshes[i]->GetBBoxMax().z);
-    }
-    for (int i = 0; i < m_materials.size(); i++)
-        m_materials[i]->Print("Material "+ std::to_string(i) + ": ");
+
+    spdlog::info("Model \"{}\":\n\t{:<11} = {}\n\t{:<11} = {}\n\t{:<11} = {}\n\t{:<11} = {}",
+        path, "[Meshes]", m_meshes.size(), "[Vertices]", m_numVertices, "[Indices]", m_numIndices, "[Triangles]", m_numIndices / 3);
+    
+    LogMetadata(scene);
+    LogMeshes();
+    LogMaterials();
 }
 
 void Model::ProcessMaterials(const aiScene* scene, VkDescriptorPool pool, VkDescriptorSetLayout layout) {
     for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
-        Material* material = new Material(scene->mMaterials[i], m_directory, m_textures);
+        Material* material = new Material(scene, scene->mMaterials[i], m_directory, m_textures);
 
         m_materials.push_back(material);
     }
@@ -218,4 +216,65 @@ Mesh *Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     m_bboxMax.z = std::max(m_bboxMax.z, bboxMax.z);
 
     return new Mesh(vertices, indices, material, bboxMin, bboxMax);
+}
+
+void Model::LogMetadata(const aiScene* scene) const {
+    auto out = fmt::memory_buffer();
+    fmt::format_to(std::back_inserter(out), "Metadata:\n");
+    aiMetadata* metadata = scene->mMetaData;
+    for (int i = 0; i < metadata->mNumProperties; i++) {
+        std::string key = std::string("[") + metadata->mKeys[i].C_Str() + "]";
+        fmt::format_to(std::back_inserter(out), "\t{:<27} = ", key);
+        aiMetadataEntry entry = metadata->mValues[i];
+
+        if (entry.mType == aiMetadataType::AI_BOOL) {
+            bool value = *(bool*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "{}\n", value ? "True" : "False");
+        }
+        else if (entry.mType == aiMetadataType::AI_INT32) {
+            int value = *(int*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "{}\n", value);
+        }
+        else if (entry.mType == aiMetadataType::AI_UINT64) {
+            uint64_t value = *(uint64_t*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "{}\n", value);
+        }
+        else if (entry.mType == aiMetadataType::AI_FLOAT) {
+            float value = *(float*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "{}\n", value);
+        }
+        else if (entry.mType == aiMetadataType::AI_AISTRING) {
+            aiString* value = (aiString*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "{}\n", value->C_Str());
+        }
+        else if (entry.mType == aiMetadataType::AI_AIVECTOR3D) {
+            aiVector3D* value = (aiVector3D*)entry.mData;
+            fmt::format_to(std::back_inserter(out), "({}, {}, {})\n", value->x, value->y, value->z);
+        }
+        else {
+            fmt::format_to(std::back_inserter(out), "type not processed: {}\n", (int)entry.mType);
+        }
+    }
+    spdlog::info("{:.{}}", out.data(), out.size());
+}
+
+void Model::LogMeshes() const {
+    auto out = fmt::memory_buffer();
+    fmt::format_to(std::back_inserter(out), "Meshes:\n");
+    for (int i = 0; i < m_meshes.size(); i++) {
+        fmt::format_to(std::back_inserter(out), "[Mesh {}]: verts = {}, inds = {}, tris = {}, material = \"{}\"\n",
+            i, m_meshes[i]->GetNumVertices(), m_meshes[i]->GetNumIndices(), m_meshes[i]->GetNumIndices() / 3, m_meshes[i]->GetMaterial()->GetName());
+        fmt::format_to(std::back_inserter(out), "{:<10}bbox = min({:.3f}, {:.3f}, {:.3f}), max({:.3f}, {:.3f}, {:.3f})\n", " ",
+            m_meshes[i]->GetBBoxMin().x, m_meshes[i]->GetBBoxMin().y, m_meshes[i]->GetBBoxMin().z,
+            m_meshes[i]->GetBBoxMax().x, m_meshes[i]->GetBBoxMax().y, m_meshes[i]->GetBBoxMax().z);
+    }
+    spdlog::debug("{:.{}}", out.data(), out.size());
+}
+
+void Model::LogMaterials() const {
+    fmt::memory_buffer out = fmt::memory_buffer();
+    fmt::format_to(std::back_inserter(out), "Materials:\n");
+    for (int i = 0; i < m_materials.size(); i++)
+        m_materials[i]->Log("[Material " + std::to_string(i) + "]: ", out);
+    spdlog::debug("{:.{}}", out.data(), out.size());
 }

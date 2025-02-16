@@ -6,15 +6,17 @@
 
 #include <glm/glm.hpp>
 #include "assimp/types.h"
+#include "assimp/material.h"
 
 class Device;
 class Texture;
 struct aiMaterial;
+struct aiScene;
 
 class Material {
 public:
     Material();
-    Material(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures);
+    Material(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture *>& textures);
     ~Material();
 
     enum class ShadingModel {
@@ -45,17 +47,15 @@ public:
     void SetDiffuseTexture(Texture* texture);
     void SetSpecularTexture(Texture* texture);
 
-    void Print(const std::string& prefix) const;
+    void Log(const std::string& prefix, fmt::memory_buffer& out) const;
 
     VkDescriptorSet GetDescriptorSet() const { return m_materialDescSet; }
 
     static glm::vec3 ToGlm(const aiColor3D& color3D) { return glm::vec3(color3D.r, color3D.g, color3D.b); };
 
-    static void PrintColor(const std::string& prefix, const glm::vec3& color) {
-        spdlog::debug("{} = ({:.3f}, {:.3f}, {:.3f})", prefix, color.r, color.g, color.b);
-    }
+    static void LogColor(const std::string& prefix, const glm::vec3& color, fmt::memory_buffer& out);
 
-    static void PrintTexture(const std::string& prefix, const Texture* tex);
+    static void LogTexture(const std::string& prefix, const Texture* tex, fmt::memory_buffer& out);
 
 private:
     std::string m_name;
@@ -81,5 +81,6 @@ private:
     VkDeviceMemory m_materialMemory;
 
     void Init();
-    void LoadFromAssimp(const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures);
+    void LoadFromAssimp(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures);
+    Texture* GetTexture(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, aiTextureType type, unsigned int index) const;
 };
