@@ -47,7 +47,8 @@ vec3 DirLight(Light light, vec3 normal, vec3 viewDir) {
     vec3 diffuse = vec3(light.diffuse * texture(diffuseSampler, fragTexCoord) * diffuseIntensity * vec4(material.diffuse, 0));
 
     vec3 reflectDir = reflect(-lightDir, normal);
-    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    // pow: The result is undefined if x<0 or if x=0 and y≤0
+    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), max(material.shininess, 0.001));
     vec3 specular = vec3(light.specular * texture(specularSampler, fragTexCoord) * specularIntensity * vec4(material.specular, 0));
 
     return (ambient + diffuse + specular);
@@ -59,7 +60,8 @@ vec3 PointLight(Light light, vec3 normal, vec3 viewDir) {
     float diffuseIntensity = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    // pow: The result is undefined if x<0 or if x=0 and y≤0
+    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), max(material.shininess, 0.001));
     // attenuation
     float distance    = length(vec3(light.position) - fragPosition);
     float attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * distance + 
@@ -90,7 +92,8 @@ vec3 SpotLight(Light light, vec3 normal, vec3 viewDir) {
         
     // specular
     vec3 reflectDir = reflect(-lightDir, normal);
-    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    // pow: The result is undefined if x<0 or if x=0 and y≤0
+    float specularIntensity = pow(max(dot(viewDir, reflectDir), 0.0), max(material.shininess, 0.001));
     vec3 specular = vec3(light.specular * texture(specularSampler, fragTexCoord) * specularIntensity * vec4(material.specular, 0));
 
     // attenuation

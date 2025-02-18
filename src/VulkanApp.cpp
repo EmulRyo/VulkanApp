@@ -146,9 +146,9 @@ void VulkanApp::UpdateUniformBuffer() {
     global.numLights = glm::ivec4(1, 1, 1, 0); // x:directional, y:point, z:spot
     
     global.lights[0].direction = glm::vec4(glm::normalize(glm::vec3(-1, -1, -1)), 0);
-    global.lights[0].ambient  = glm::vec4(0.1f);
-    global.lights[0].diffuse  = glm::vec4(0.1f);
-    global.lights[0].specular = glm::vec4(0.1f);
+    global.lights[0].ambient  = glm::vec4(0.2f);
+    global.lights[0].diffuse  = glm::vec4(0.5f);
+    global.lights[0].specular = glm::vec4(0.3f);
 
     global.lights[1].position = glm::vec4(cos(time * 0.5f), 0.2, sin(time * 0.5f), 0);
     global.lights[1].ambient  = glm::vec4(1.0f);

@@ -69,21 +69,21 @@ void Material::Init() {
 }
 
 void Material::LoadFromAssimp(const aiScene* scene, const aiMaterial* assimpMat, const std::string& directory, std::vector<Texture*>& textures) {
+	aiReturn r = aiReturn_FAILURE;
+
 	aiString name;
-	assimpMat->Get(AI_MATKEY_NAME, name);
-	SetName(name.C_Str());
+	r = assimpMat->Get(AI_MATKEY_NAME, name);
+	SetName(r == aiReturn_SUCCESS ? name.C_Str() : "Unknown");
 
 	int shadingModel = 0;
-	assimpMat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+	r = assimpMat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
 	SetShadingModel(shadingModel);
 
-	float shininess = 0;
-	assimpMat->Get(AI_MATKEY_SHININESS, shininess);
+	float shininess = 32;
+	r = assimpMat->Get(AI_MATKEY_SHININESS, shininess);
 	SetShininess(shininess);
 
 	aiColor3D vec3;
-
-	aiReturn r = aiReturn_FAILURE;
 	r = assimpMat->Get(AI_MATKEY_COLOR_DIFFUSE, vec3);
 	SetDiffuseColor(r == aiReturn_SUCCESS ? ToGlm(vec3) : glm::vec3(0));
 	r = assimpMat->Get(AI_MATKEY_COLOR_AMBIENT, vec3);
@@ -152,7 +152,7 @@ Texture* Material::GetTexture(const aiScene* scene, const aiMaterial* assimpMat,
 
 const std::string& Material::GetShadingModelName() const {
 	static std::string names[] = {
-		"Error", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
+		"Unknown", "Flat", "Gouraud", "Phong", "Blinn", "Toon", "OrenNayar", "Minnaert", "CookTorrance", "Unlit", "Fresnel", "PBR"
 	};
 	return names[(int)m_shadingModel];
 }

@@ -20,7 +20,7 @@ public:
     ~Material();
 
     enum class ShadingModel {
-        Error, Flat, Gouraud, Phong, Blinn, Toon, OrenNayar, Minnaert, CookTorrance, Unlit, Fresnel, PBR
+        Unknown, Flat, Gouraud, Phong, Blinn, Toon, OrenNayar, Minnaert, CookTorrance, Unlit, Fresnel, PBR
     };
 
     const std::string& GetName() const { return m_name; }
